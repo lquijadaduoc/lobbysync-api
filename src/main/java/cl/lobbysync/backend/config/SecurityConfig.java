@@ -21,21 +21,19 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .csrf().disable()
-                .cors()
-                .and()
-                .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                .and()
-                .authorizeRequests()
-                .requestMatchers(HttpMethod.POST, "/api/auth/sync-user").authenticated()
-                .requestMatchers(HttpMethod.GET, "/api/access-logs/**").authenticated()
-                .requestMatchers(HttpMethod.POST, "/api/access-logs/**").authenticated()
-                .requestMatchers(HttpMethod.GET, "/api/parcels/**").authenticated()
-                .requestMatchers(HttpMethod.POST, "/api/parcels/**").authenticated()
-                .requestMatchers(HttpMethod.GET, "/api/buildings/**").permitAll()
-                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                .anyRequest().authenticated()
-                .and()
+                .csrf(csrf -> csrf.disable())
+                .cors(cors -> {})
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(authz -> authz
+                        .requestMatchers(HttpMethod.POST, "/api/auth/sync-user").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/access-logs/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/access-logs/**").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/parcels/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/parcels/**").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/buildings/**").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        .anyRequest().authenticated()
+                )
                 .addFilterBefore(firebaseTokenFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
