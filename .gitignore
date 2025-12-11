@@ -1,0 +1,95 @@
+# .gitignore - LobbySync Backend
+
+# ===== BUILD ARTIFACTS =====
+target/
+build/
+out/
+*.class
+*.jar
+*.war
+*.ear
+
+# ===== IDE & EDITORS =====
+.idea/
+.vscode/
+*.iws
+*.iml
+*.ipr
+*.swp
+*.swo
+*~
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+.sublime-workspace
+
+# ===== MAVEN =====
+.mvn/wrapper/maven-wrapper.jar
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.asc
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+
+# ===== GRADLE =====
+.gradle/
+gradle-app.setting
+!gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
+
+# ===== NODEJS (if needed) =====
+node_modules/
+npm-debug.log
+package-lock.json
+
+# ===== SENSITIVE INFORMATION - DO NOT COMMIT =====
+serviceAccountKey.json
+src/main/resources/serviceAccountKey.json
+firebase-key.json
+.env
+.env.local
+.env.*.local
+application-secrets.properties
+
+# ===== DATABASE & CACHE =====
+*.db
+*.sqlite
+*.sqlite3
+
+# ===== LOGS =====
+*.log
+logs/
+
+# ===== SYSTEM FILES =====
+.DS_Store
+.AppleDouble
+.AppleDB
+.LSOverride
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ===== RUNTIME =====
+uploads/
+tmp/
+temp/
+.cache/
+.local/
+
+# ===== DOCKER =====
+.docker/
+docker-compose.override.yml
+
+# ===== TEST COVERAGE =====
+coverage/
+.nyc_output/
+
+# ===== MISC =====
+*.tmp
+.project
