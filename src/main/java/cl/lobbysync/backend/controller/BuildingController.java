@@ -1,7 +1,9 @@
 package cl.lobbysync.backend.controller;
 
 import cl.lobbysync.backend.model.sql.Building;
+import cl.lobbysync.backend.model.sql.Unit;
 import cl.lobbysync.backend.service.BuildingService;
+import cl.lobbysync.backend.service.UnitService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -9,17 +11,15 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/buildings")
+@RequestMapping("/api/v1/buildings")
 @Slf4j
 public class BuildingController {
 
     @Autowired(required = false)
     private BuildingService buildingService;
 
-    @GetMapping("/test")
-    public ResponseEntity<String> test() {
-        return ResponseEntity.ok("test");
-    }
+    @Autowired(required = false)
+    private UnitService unitService;
 
     @GetMapping
     public ResponseEntity<List<Building>> getAllBuildings() {
@@ -43,6 +43,13 @@ public class BuildingController {
     @GetMapping("/{id}")
     public ResponseEntity<Building> getBuildingById(@PathVariable Long id) {
         return ResponseEntity.ok(buildingService.getBuildingById(id));
+    }
+
+    @GetMapping("/{id}/units")
+    public ResponseEntity<List<Unit>> getBuildingUnits(@PathVariable Long id) {
+        log.info("Getting units for building: {}", id);
+        List<Unit> units = unitService.getUnitsByBuildingId(id);
+        return ResponseEntity.ok(units);
     }
 
     @PostMapping
