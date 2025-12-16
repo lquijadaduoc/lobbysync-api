@@ -4,7 +4,6 @@ import cl.lobbysync.backend.filter.FirebaseTokenFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -25,14 +24,7 @@ public class SecurityConfig {
                 .cors(cors -> {})
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authz -> authz
-                        .requestMatchers(HttpMethod.POST, "/api/auth/sync-user").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/api/access-logs/**").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/api/access-logs/**").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/api/parcels/**").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/api/parcels/**").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/api/buildings/**").permitAll()
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                        .anyRequest().authenticated()
+                        .anyRequest().permitAll()
                 )
                 .addFilterBefore(firebaseTokenFilter, UsernamePasswordAuthenticationFilter.class);
 

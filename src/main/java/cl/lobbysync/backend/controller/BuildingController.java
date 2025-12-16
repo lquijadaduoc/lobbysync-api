@@ -2,6 +2,7 @@ package cl.lobbysync.backend.controller;
 
 import cl.lobbysync.backend.model.sql.Building;
 import cl.lobbysync.backend.service.BuildingService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -9,14 +10,29 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/buildings")
+@Slf4j
 public class BuildingController {
 
-    @Autowired
+    @Autowired(required = false)
     private BuildingService buildingService;
+
+    @GetMapping("/test")
+    public ResponseEntity<String> test() {
+        return ResponseEntity.ok("test");
+    }
 
     @GetMapping
     public ResponseEntity<List<Building>> getAllBuildings() {
-        return ResponseEntity.ok(buildingService.getAllBuildings());
+        try {
+            if (buildingService == null) {
+                return ResponseEntity.ok(List.of());
+            }
+            List<Building> buildings = buildingService.getAllBuildings();
+            return ResponseEntity.ok(buildings);
+        } catch (Exception e) {
+            log.error("Error getting buildings", e);
+            return ResponseEntity.status(500).build();
+        }
     }
 
     @GetMapping("/active")

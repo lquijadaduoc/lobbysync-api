@@ -1,5 +1,6 @@
 package cl.lobbysync.backend.exception;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -8,10 +9,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RestControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleResourceNotFound(ResourceNotFoundException ex) {
+        log.error("Resource not found", ex);
         Map<String, Object> response = new HashMap<>();
         response.put("error", "Resource Not Found");
         response.put("message", ex.getMessage());
@@ -21,6 +24,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, Object>> handleIllegalArgument(IllegalArgumentException ex) {
+        log.error("Illegal argument", ex);
         Map<String, Object> response = new HashMap<>();
         response.put("error", "Invalid Argument");
         response.put("message", ex.getMessage());
@@ -30,9 +34,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGlobalException(Exception ex) {
+        log.error("Internal server error", ex);
         Map<String, Object> response = new HashMap<>();
         response.put("error", "Internal Server Error");
-        response.put("message", ex.getMessage());
+        response.put("message", ex.getMessage() != null ? ex.getMessage() : "Unknown error");
+        response.put("exception", ex.getClass().getName());
         response.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
