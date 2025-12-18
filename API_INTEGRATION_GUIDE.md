@@ -720,8 +720,12 @@ Firebase: Proyecto de desarrollo
 
 ### Production
 ```
-URL: https://api.lobbysync.cl
-Base de Datos: Cloud
+URL: http://168.197.50.14:8080
+Base de Datos: Docker VPS
+- PostgreSQL: postgres_db:5432
+- MongoDB: mongo_db:27017
+Servidor: Ubuntu 24.04 LTS (VPS)
+RAM: 1.9GB
 Firebase: Proyecto de producción
 ```
 
@@ -730,8 +734,15 @@ Firebase: Proyecto de producción
 ## Documentación Interactiva
 
 ### Swagger UI
+
+**Development:**
 ```
 URL: http://localhost:8080/swagger-ui.html
+```
+
+**Production:**
+```
+URL: http://168.197.50.14:8080/swagger-ui.html
 ```
 
 Proporciona:
@@ -741,8 +752,15 @@ Proporciona:
 - Autenticación integrada
 
 ### OpenAPI Spec
+
+**Development:**
 ```
 URL: http://localhost:8080/v3/api-docs
+```
+
+**Production:**
+```
+URL: http://168.197.50.14:8080/v3/api-docs
 ```
 
 Exportar especificación para generar clientes automáticamente.
@@ -778,3 +796,10 @@ Para dudas o problemas:
 - ✅ Firebase Authentication
 - ✅ Hybrid Database (PostgreSQL + MongoDB)
 - ✅ OpenAPI/Swagger Documentation
+
+### v1.0.1 (2025-12-17)
+- ✅ Production Deployment en VPS 168.197.50.14
+- ✅ Docker multi-container setup (PostgreSQL + MongoDB + Backend)
+- ✅ MongoDB connection configurada con MongoConfig personalizado
+- ✅ Base de datos de prueba con usuarios y edificios
+- ✅ API accesible públicamente en puerto 8080

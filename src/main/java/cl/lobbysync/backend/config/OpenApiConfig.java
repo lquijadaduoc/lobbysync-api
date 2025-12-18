@@ -53,8 +53,8 @@ public class OpenApiConfig {
                                 .url("http://localhost:8080")
                                 .description("Development Server"),
                         new Server()
-                                .url("https://api.lobbysync.cl")
-                                .description("Production Server")
+                                .url("http://168.197.50.14:8080")
+                                .description("Production Server (VPS)")
                 ))
                 .components(new Components()
                         .addSecuritySchemes("bearer-jwt", new SecurityScheme()
