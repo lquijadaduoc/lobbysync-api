@@ -4,6 +4,8 @@ import cl.lobbysync.backend.model.sql.User;
 import cl.lobbysync.backend.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -11,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1/users")
 @Slf4j
+@Tag(name = "Users", description = "Consulta de usuarios sincronizados")
 public class UserController {
 
     @Autowired
@@ -18,8 +21,12 @@ public class UserController {
 
     /**
      * GET /api/v1/users/me
-     * Devuelve la información y rol del usuario logueado
+     * Devuelve la informaciИn y rol del usuario logueado
      */
+    @Operation(
+            summary = "Obtener usuario actual",
+            description = "Devuelve informacion del usuario autenticado a partir del token JWT."
+    )
     @GetMapping("/me")
     public ResponseEntity<User> getCurrentUser(Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
@@ -33,11 +40,19 @@ public class UserController {
         return ResponseEntity.ok(user);
     }
 
+    @Operation(
+            summary = "Obtener usuario por ID",
+            description = "Recupera un usuario especifico por su identificador."
+    )
     @GetMapping("/{id}")
     public ResponseEntity<User> getUserById(@PathVariable Long id) {
         return ResponseEntity.ok(userService.getUserById(id));
     }
 
+    @Operation(
+            summary = "Obtener usuario por email",
+            description = "Busca un usuario por su email registrado."
+    )
     @GetMapping("/email/{email}")
     public ResponseEntity<User> getUserByEmail(@PathVariable String email) {
         return ResponseEntity.ok(userService.getUserByEmail(email));

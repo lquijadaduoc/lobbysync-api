@@ -6,6 +6,8 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.FirebaseToken;
 import org.springframework.beans.factory.annotation.Autowired;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -14,6 +16,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
+@Tag(name = "Auth", description = "Sincronizacion y verificacion de usuarios autenticados")
 public class AuthController {
 
     @Autowired
@@ -22,6 +25,10 @@ public class AuthController {
     @Autowired
     private FirebaseAuth firebaseAuth;
 
+    @Operation(
+            summary = "Sincronizar usuario",
+            description = "Sincroniza un usuario desde Firebase usando el token JWT o el principal autenticado."
+    )
     @PostMapping("/sync-user")
     public ResponseEntity<UserSyncResponse> syncUser(
             Authentication authentication,
@@ -61,6 +68,10 @@ public class AuthController {
         }
     }
 
+    @Operation(
+            summary = "Verificar token",
+            description = "Verifica si el principal autenticado es valido y retorna su UID."
+    )
     @GetMapping("/verify")
     public ResponseEntity<Map<String, Object>> verifyToken(Authentication authentication) {
         if (authentication != null && authentication.isAuthenticated()) {

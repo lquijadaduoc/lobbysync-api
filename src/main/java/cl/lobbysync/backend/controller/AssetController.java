@@ -6,6 +6,8 @@ import cl.lobbysync.backend.service.AssetService;
 import cl.lobbysync.backend.service.MaintenanceService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -15,6 +17,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/assets")
 @Slf4j
+@Tag(name = "Assets", description = "Gestion de activos y tickets de mantenimiento")
 public class AssetController {
 
     @Autowired
@@ -27,6 +30,10 @@ public class AssetController {
      * GET /api/assets
      * Lista todos los activos del edificio
      */
+    @Operation(
+            summary = "Listar activos",
+            description = "Obtiene los activos registrados; permite filtrar por buildingId."
+    )
     @GetMapping
     public ResponseEntity<List<Asset>> getAllAssets(@RequestParam(required = false) Long buildingId) {
         log.info("Getting all assets");
@@ -36,11 +43,19 @@ public class AssetController {
         return ResponseEntity.ok(assetService.getAllAssets());
     }
 
+    @Operation(
+            summary = "Obtener activo",
+            description = "Recupera un activo especifico por su ID."
+    )
     @GetMapping("/{id}")
     public ResponseEntity<Asset> getAssetById(@PathVariable String id) {
         return ResponseEntity.ok(assetService.getAssetById(id));
     }
 
+    @Operation(
+            summary = "Crear activo",
+            description = "Crea un nuevo activo y lo asocia al edificio indicado."
+    )
     @PostMapping
     public ResponseEntity<Asset> createAsset(@RequestBody Asset asset) {
         log.info("Creating asset: {}", asset.getName());
@@ -48,6 +63,10 @@ public class AssetController {
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
+    @Operation(
+            summary = "Actualizar activo",
+            description = "Actualiza datos basicos de un activo existente."
+    )
     @PutMapping("/{id}")
     public ResponseEntity<Asset> updateAsset(
             @PathVariable String id,
@@ -57,8 +76,12 @@ public class AssetController {
 
     /**
      * POST /api/assets/{id}/ticket
-     * Abre un nuevo ticket de mantención para un activo
+     * Abre un nuevo ticket de mantenciИn para un activo
      */
+    @Operation(
+            summary = "Crear ticket de mantenimiento",
+            description = "Abre un ticket asociado al activo y registra quien lo reporta."
+    )
     @PostMapping("/{id}/ticket")
     public ResponseEntity<MaintenanceTicket> createMaintenanceTicket(
             @PathVariable String id,
@@ -74,11 +97,19 @@ public class AssetController {
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
+    @Operation(
+            summary = "Listar tickets de un activo",
+            description = "Obtiene todos los tickets asociados al activo indicado."
+    )
     @GetMapping("/{id}/tickets")
     public ResponseEntity<List<MaintenanceTicket>> getAssetTickets(@PathVariable String id) {
         return ResponseEntity.ok(maintenanceService.getTicketsByAssetId(id));
     }
 
+    @Operation(
+            summary = "Eliminar activo",
+            description = "Elimina un activo por su identificador."
+    )
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteAsset(@PathVariable String id) {
         assetService.deleteAsset(id);
@@ -88,7 +119,7 @@ public class AssetController {
     private Long getUserIdFromAuthentication(Authentication authentication) {
         if (authentication != null && authentication.isAuthenticated()) {
             // String firebaseUid = (String) authentication.getPrincipal();
-            // TODO: Implementar búsqueda de userId por firebaseUid
+            // TODO: Implementar bカsqueda de userId por firebaseUid
             return 1L;
         }
         return 1L;
