@@ -8,6 +8,7 @@ import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.UserRecord;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -18,6 +19,10 @@ public class UserService {
 
     @Autowired
     private FirebaseAuth firebaseAuth;
+
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
+    }
 
     public UserSyncResponse syncUserFromFirebase(String firebaseUid) throws FirebaseAuthException {
         UserRecord userRecord = firebaseAuth.getUser(firebaseUid);

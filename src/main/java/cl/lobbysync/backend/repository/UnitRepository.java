@@ -11,4 +11,5 @@ public interface UnitRepository extends JpaRepository<Unit, Long> {
     List<Unit> findByBuildingId(Long buildingId);
     List<Unit> findByIsActive(Boolean isActive);
     List<Unit> findByOwnerId(Long ownerId);
+    int countByBuildingId(Long buildingId);  // Cuenta unidades por edificio
 }

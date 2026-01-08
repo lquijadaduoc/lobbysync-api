@@ -37,6 +37,12 @@ public class Unit {
     @Column
     private Long ownerId; // Propietario (referencia a User)
 
+    @Column
+    private String ownerName; // Nombre del morador/propietario
+
+    @Column
+    private String ownerPhone; // Teléfono del morador/propietario
+
     @Builder.Default
     @Column(nullable = false)
     private Boolean isActive = true;

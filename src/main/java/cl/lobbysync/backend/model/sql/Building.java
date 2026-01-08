@@ -24,6 +24,12 @@ public class Building {
 
     private String address;
 
+    @Column(name = "floors")
+    private Integer floors;  // Número de pisos del edificio
+
+    @Transient  // No se persiste en DB, se calcula dinámicamente
+    private Integer totalUnits;  // Total de unidades (calculado)
+
     @Builder.Default
     private Boolean isActive = true;
 }

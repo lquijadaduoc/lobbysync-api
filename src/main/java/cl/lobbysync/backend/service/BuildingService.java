@@ -2,6 +2,7 @@ package cl.lobbysync.backend.service;
 
 import cl.lobbysync.backend.model.sql.Building;
 import cl.lobbysync.backend.repository.BuildingRepository;
+import cl.lobbysync.backend.repository.UnitRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.List;
@@ -12,17 +13,34 @@ public class BuildingService {
     @Autowired
     private BuildingRepository buildingRepository;
 
+    @Autowired
+    private UnitRepository unitRepository;
+
     public List<Building> getAllBuildings() {
-        return buildingRepository.findAll();
+        List<Building> buildings = buildingRepository.findAll();
+        // Calcular totalUnits para cada edificio
+        buildings.forEach(building -> {
+            int unitCount = unitRepository.countByBuildingId(building.getId());
+            building.setTotalUnits(unitCount);
+        });
+        return buildings;
     }
 
     public List<Building> getActiveBuildings() {
-        return buildingRepository.findByIsActive(true);
+        List<Building> buildings = buildingRepository.findByIsActive(true);
+        buildings.forEach(building -> {
+            int unitCount = unitRepository.countByBuildingId(building.getId());
+            building.setTotalUnits(unitCount);
+        });
+        return buildings;
     }
 
     public Building getBuildingById(Long id) {
-        return buildingRepository.findById(id)
+        Building building = buildingRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Building not found"));
+        int unitCount = unitRepository.countByBuildingId(building.getId());
+        building.setTotalUnits(unitCount);
+        return building;
     }
 
     public Building createBuilding(Building building) {
@@ -33,6 +51,7 @@ public class BuildingService {
         Building building = getBuildingById(id);
         building.setName(buildingDetails.getName());
         building.setAddress(buildingDetails.getAddress());
+        building.setFloors(buildingDetails.getFloors());
         building.setIsActive(buildingDetails.getIsActive());
         return buildingRepository.save(building);
     }
