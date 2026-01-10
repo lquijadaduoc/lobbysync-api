@@ -21,30 +21,79 @@ public class OpenApiConfig {
         return new OpenAPI()
                 .info(new Info()
                         .title("LobbySync Backend API")
-                        .version("1.0.0")
+                        .version("2.0.0")
                         .description("""
                                 # LobbySync API - Sistema de Gestión de Edificios
                                 
-                                API REST completa para la administración de edificios residenciales y comerciales.
+                                API REST completa para la administración de edificios residenciales y comerciales con Firebase Authentication.
                                 
-                                ## Características Principales
+                                ## 🔐 Autenticación
                                 
-                                - **Core Module**: Gestión de edificios, unidades y usuarios
-                                - **Access Control**: Control de acceso con QR y registro de entregas
-                                - **Finance Module**: Gestión de gastos comunes, pagos y deudas
-                                - **Maintenance Module**: Administración de activos y tickets de mantenimiento
+                                Esta API utiliza **Firebase Authentication** con tokens JWT. Para usar los endpoints:
                                 
-                                ## Arquitectura
+                                1. Autenticarse en el frontend con Firebase (Email/Password)
+                                2. Obtener el ID Token de Firebase
+                                3. Incluir el token en el header: `Authorization: Bearer <token>`
+                                4. El backend sincroniza automáticamente el usuario con PostgreSQL
                                 
-                                - Autenticación con Firebase Authentication
-                                - PostgreSQL para entidades SQL
-                                - MongoDB para logs y documentos flexibles
-                                - Spring Boot 4.0.0 + Java 17
+                                ### Usuarios de Prueba
+                                
+                                - **Super Admin**: superadmin@lobbysync.com (contraseña: admin123)
+                                - **Admin**: admin@lobbysync.com (contraseña: admin123)
+                                - **Conserje**: concierge@lobbysync.com (contraseña: admin123)
+                                - **Residente**: resident@lobbysync.com (contraseña: admin123)
+                                
+                                ## 📚 Módulos Disponibles
+                                
+                                ### 👥 Gestión de Usuarios
+                                - Crear usuarios en Firebase + PostgreSQL simultáneamente
+                                - Sincronización automática con Firebase Authentication
+                                - Roles: SUPER_ADMIN, ADMIN, CONCIERGE, RESIDENT
+                                
+                                ### 🏢 Gestión de Edificios y Unidades
+                                - CRUD completo de edificios/propiedades
+                                - Gestión de unidades/departamentos por edificio
+                                - Seguimiento de ocupación y residentes
+                                
+                                ### 📋 Bitácora (Logbook)
+                                - Sistema de registro para conserjes
+                                - Notas con timestamp y usuario
+                                - Búsqueda por fecha
+                                
+                                ### 🔑 Control de Acceso
+                                - Registro de entrada/salida con QR
+                                - Historial de visitas
+                                - Gestión de invitaciones
+                                
+                                ### 📦 Gestión de Parcelas
+                                - Registro de entregas y paquetería
+                                - Notificaciones a residentes
+                                - Control de retiros
+                                
+                                ### 💰 Finanzas
+                                - Generación de gastos comunes
+                                - Seguimiento de pagos
+                                - Control de deudas
+                                
+                                ### 🛠️ Mantenimiento
+                                - Registro de activos del edificio
+                                - Tickets de mantenimiento
+                                - Historial de reparaciones
+                                
+                                ## 🗄️ Base de Datos
+                                
+                                - **PostgreSQL**: Datos estructurados (users, buildings, units, bills)
+                                - **MongoDB**: Logs y documentos flexibles (access_logs, parcels, maintenance)
+                                
+                                ## 🌐 Servidores
+                                
+                                - **Desarrollo**: http://localhost:8080
+                                - **Producción**: http://168.197.50.14:8080
                                 """)
                         .contact(new Contact()
-                                .name("LobbySync Team")
-                                .email("contacto@lobbysync.cl")
-                                .url("https://lobbysync.cl"))
+                                .name("Luis Quijada Munoz")
+                                .email("luisquijadaduoc@gmail.com")
+                                .url("https://github.com/lquijadaduoc"))
                         .license(new License()
                                 .name("MIT License")
                                 .url("https://opensource.org/licenses/MIT")))
@@ -61,7 +110,7 @@ public class OpenApiConfig {
                                 .type(SecurityScheme.Type.HTTP)
                                 .scheme("bearer")
                                 .bearerFormat("JWT")
-                                .description("Firebase JWT Token")))
+                                .description("Firebase ID Token - Obtener desde Firebase Authentication después de login")))
                 .addSecurityItem(new SecurityRequirement().addList("bearer-jwt"));
     }
 }
