@@ -9,6 +9,7 @@ import java.util.Optional;
 @Repository
 public interface ParcelRepository extends MongoRepository<Parcel, String> {
     List<Parcel> findByUserId(Long userId);
+    List<Parcel> findByUserIdAndStatus(Long userId, String status);
     Optional<Parcel> findByTrackingNumber(String trackingNumber);
     List<Parcel> findByStatus(String status);
 }

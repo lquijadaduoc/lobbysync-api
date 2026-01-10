@@ -1,14 +1,19 @@
 package cl.lobbysync.backend.controller;
 
+import cl.lobbysync.backend.dto.CreateUserRequest;
+import cl.lobbysync.backend.dto.UserCreationResponse;
 import cl.lobbysync.backend.model.sql.User;
 import cl.lobbysync.backend.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+
+import jakarta.validation.Valid;
 import java.util.List;
 
 @RestController
@@ -72,5 +77,30 @@ public class UserController {
     @GetMapping("/email/{email}")
     public ResponseEntity<User> getUserByEmail(@PathVariable String email) {
         return ResponseEntity.ok(userService.getUserByEmail(email));
+    }
+
+    /**
+     * POST /api/v1/users
+     * Crea un nuevo usuario en Firebase y PostgreSQL
+     */
+    @Operation(
+            summary = "Crear nuevo usuario",
+            description = "Crea un usuario en Firebase Authentication y lo sincroniza con PostgreSQL."
+    )
+    @PostMapping
+    public ResponseEntity<UserCreationResponse> createUser(@Valid @RequestBody CreateUserRequest request) {
+        try {
+            log.info("Creating new user with email: {}", request.getEmail());
+            UserCreationResponse response = userService.createUserWithFirebase(request);
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (Exception e) {
+            log.error("Error creating user: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                UserCreationResponse.builder()
+                    .success(false)
+                    .message("Error al crear usuario: " + e.getMessage())
+                    .build()
+            );
+        }
     }
 }

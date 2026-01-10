@@ -42,6 +42,21 @@ public class ParcelController {
     }
 
     @Operation(
+            summary = "Listar mis paquetes pendientes",
+            description = "Obtiene los paquetes pendientes del usuario autenticado (RECEIVED, no DELIVERED)."
+    )
+    @GetMapping("/my-pending")
+    public ResponseEntity<List<Parcel>> getMyPendingParcels(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(401).build();
+        }
+        
+        Long userId = getUserIdFromAuthentication(authentication);
+        List<Parcel> pendingParcels = parcelService.getPendingParcelsByUserId(userId);
+        return ResponseEntity.ok(pendingParcels);
+    }
+
+    @Operation(
             summary = "Listar paquetes de usuario",
             description = "Obtiene los paquetes asociados a un usuario por su ID."
     )

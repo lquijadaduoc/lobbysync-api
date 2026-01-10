@@ -31,6 +31,10 @@ public class ParcelService {
         return parcelRepository.findByUserId(userId);
     }
 
+    public List<Parcel> getPendingParcelsByUserId(Long userId) {
+        return parcelRepository.findByUserIdAndStatus(userId, "RECEIVED");
+    }
+
     public Parcel getParcelByTrackingNumber(String trackingNumber) {
         return parcelRepository.findByTrackingNumber(trackingNumber)
                 .orElseThrow(() -> new RuntimeException("Parcel not found"));
