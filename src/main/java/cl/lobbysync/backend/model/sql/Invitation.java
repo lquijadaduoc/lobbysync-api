@@ -36,6 +36,9 @@ public class Invitation {
     @Column(nullable = false)
     private Long unitId;
 
+    @Column(name = "created_by")
+    private Long createdBy;
+
     @Column(nullable = false, unique = true, length = 36)
     private String qrToken;
 

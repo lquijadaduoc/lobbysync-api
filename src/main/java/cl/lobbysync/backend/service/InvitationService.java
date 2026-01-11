@@ -52,6 +52,10 @@ public class InvitationService {
         return invitationRepository.save(invitation);
     }
 
+    public List<Invitation> getInvitationsByCreatedBy(Long userId) {
+        return invitationRepository.findByCreatedByOrderByCreatedAtDesc(userId);
+    }
+
     public void deleteInvitation(Long id) {
         invitationRepository.deleteById(id);
     }

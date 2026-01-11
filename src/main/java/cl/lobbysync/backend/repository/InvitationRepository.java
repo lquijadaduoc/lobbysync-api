@@ -13,4 +13,5 @@ public interface InvitationRepository extends JpaRepository<Invitation, Long> {
     Optional<Invitation> findByQrToken(String qrToken);
     List<Invitation> findByStatus(InvitationStatus status);
     List<Invitation> findByUnitId(Long unitId);
+    List<Invitation> findByCreatedByOrderByCreatedAtDesc(Long createdBy);
 }
