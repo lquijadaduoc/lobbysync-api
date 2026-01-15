@@ -1,55 +1,48 @@
 package cl.lobbysync.backend.model.sql;
 
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import jakarta.persistence.*;
+
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "users")
+@Table(name = "reservation_guests")
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class User {
+public class ReservationGuest {
+    
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Column(unique = true, nullable = false)
-    private String email;
-
+    
+    @Column(name = "reservation_id", nullable = false)
+    private Long reservationId;
+    
     @Column(nullable = false)
-    private String firebaseUid;
-
+    private String name;
+    
     @Column(nullable = false)
-    @Builder.Default
-    private String role = "RESIDENT";
-
-    @Column
-    private String firstName;
-
-    @Column
-    private String lastName;
-
+    private String rut;
+    
     @Column
     private String phone;
-
-    @Column(nullable = false)
-    @Builder.Default
-    private Boolean isActive = true;
-
+    
+    @Column(name = "checked_in")
+    private Boolean checkedIn = false;
+    
+    @Column(name = "check_in_time")
+    private LocalDateTime checkInTime;
+    
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
-
-    @ManyToOne
-    @JoinColumn(name = "unit_id")
-    private Unit unit;
-
+    
     @PrePersist
     protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
+        createdAt = LocalDateTime.now();
     }
 }

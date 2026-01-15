@@ -37,7 +37,7 @@ public class AuthController {
     @Autowired
     private UserRepository userRepository;
 
-    @Autowired
+    @Autowired(required = false)
     private FirebaseAuth firebaseAuth;
 
     private final Key jwtKey = Keys.secretKeyFor(SignatureAlgorithm.HS256);

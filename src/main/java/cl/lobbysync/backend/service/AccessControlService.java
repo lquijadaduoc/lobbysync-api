@@ -47,8 +47,8 @@ public class AccessControlService {
                 .orElseThrow(() -> new ResourceNotFoundException("Invitación no encontrada"));
 
         // 2. Valida que no esté caducada o ya usada
-        if (invitation.getStatus() == InvitationStatus.USED) {
-            throw new IllegalArgumentException("Esta invitación ya fue utilizada el " + invitation.getUsedAt());
+        if (invitation.getStatus() == InvitationStatus.EXITED) {
+            throw new IllegalArgumentException("Esta invitación ya fue utilizada el " + invitation.getEntryTime());
         }
 
         if (invitation.getStatus() == InvitationStatus.EXPIRED) {

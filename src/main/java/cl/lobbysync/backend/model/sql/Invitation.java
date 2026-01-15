@@ -49,10 +49,19 @@ public class Invitation {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
-    private InvitationStatus status = InvitationStatus.ACTIVE;
+    private InvitationStatus status = InvitationStatus.PENDING;
 
     @Column
     private LocalDateTime usedAt;
+
+    @Column
+    private LocalDateTime entryTime;
+
+    @Column
+    private LocalDateTime exitTime;
+
+    @Column(columnDefinition = "TEXT")
+    private String notes;
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -81,20 +90,20 @@ public class Invitation {
     }
 
     /**
-     * Método burn: Marca la invitación como USED y guarda la fecha actual
+     * Método burn: Marca la invitación como EXITED y guarda la fecha actual
      */
     public void burn() {
-        this.status = InvitationStatus.USED;
+        this.status = InvitationStatus.EXITED;
         this.usedAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
 
     /**
      * Valida si el QR es válido
-     * @return true si status == ACTIVE y no ha expirado
+     * @return true si status == PENDING y no ha expirado
      */
     public boolean isValid() {
-        return this.status == InvitationStatus.ACTIVE 
+        return this.status == InvitationStatus.PENDING 
             && LocalDateTime.now().isBefore(this.validUntil);
     }
 
@@ -110,7 +119,7 @@ public class Invitation {
      * Marca automáticamente como EXPIRED si ha pasado la fecha de validez
      */
     public void checkAndExpire() {
-        if (this.status == InvitationStatus.ACTIVE && isExpired()) {
+        if (this.status == InvitationStatus.PENDING && isExpired()) {
             this.status = InvitationStatus.EXPIRED;
             this.updatedAt = LocalDateTime.now();
         }

@@ -18,7 +18,7 @@ import java.util.ArrayList;
 @Component
 public class FirebaseTokenFilter extends OncePerRequestFilter {
 
-    @Autowired
+    @Autowired(required = false)
     private FirebaseAuth firebaseAuth;
 
     @Override
@@ -27,7 +27,7 @@ public class FirebaseTokenFilter extends OncePerRequestFilter {
         
         String authHeader = request.getHeader("Authorization");
         
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+        if (firebaseAuth != null && authHeader != null && authHeader.startsWith("Bearer ")) {
             try {
                 String token = authHeader.substring(7);
                 FirebaseToken decodedToken = firebaseAuth.verifyIdToken(token);

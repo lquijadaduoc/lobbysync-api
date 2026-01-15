@@ -41,6 +41,15 @@ public class CommonArea {
     @Column(name = "image_url")
     private String imageUrl;
     
+    @Column(name = "requires_approval", nullable = false)
+    private Boolean requiresApproval = true;
+    
+    @Column(name = "time_blocks", columnDefinition = "TEXT")
+    private String timeBlocks; // JSON string: [{"name":"Almuerzo","start":"12:00","end":"16:00"},...]
+    
+    @Column(name = "max_advance_days")
+    private Integer maxAdvanceDays = 30; // Máximo días de anticipación para reservar
+    
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
     

@@ -45,6 +45,30 @@ public class Reservation {
     @Column(name = "total_amount")
     private Double totalAmount;
     
+    @Column(name = "payment_proof_url")
+    private String paymentProofUrl;
+    
+    @Column(name = "check_in_time")
+    private LocalDateTime checkInTime;
+    
+    @Column(name = "check_out_time")
+    private LocalDateTime checkOutTime;
+    
+    @Column(name = "approved_by")
+    private Long approvedBy;
+    
+    @Column(name = "approved_at")
+    private LocalDateTime approvedAt;
+    
+    @Column(name = "rejection_reason")
+    private String rejectionReason;
+    
+    @Column(name = "requires_cleaning")
+    private Boolean requiresCleaning = false;
+    
+    @Column(name = "cleaning_notes")
+    private String cleaningNotes;
+    
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
     
@@ -63,9 +87,11 @@ public class Reservation {
     }
     
     public enum ReservationStatus {
-        PENDING,
-        CONFIRMED,
-        CANCELLED,
-        COMPLETED
+        PENDING,      // Esperando aprobación
+        APPROVED,     // Aprobada por admin
+        REJECTED,     // Rechazada
+        IN_USE,       // En uso (check-in realizado)
+        COMPLETED,    // Completada (check-out realizado)
+        CANCELLED     // Cancelada por el usuario
     }
 }

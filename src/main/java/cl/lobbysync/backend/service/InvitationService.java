@@ -46,7 +46,7 @@ public class InvitationService {
         
         // Establecer valores por defecto si no están presentes
         if (invitation.getStatus() == null) {
-            invitation.setStatus(InvitationStatus.ACTIVE);
+            invitation.setStatus(InvitationStatus.PENDING);
         }
         
         return invitationRepository.save(invitation);
@@ -58,6 +58,45 @@ public class InvitationService {
 
     public void deleteInvitation(Long id) {
         invitationRepository.deleteById(id);
+    }
+
+    public Invitation updateInvitation(Long id, Invitation invitationDetails) {
+        Invitation invitation = getInvitationById(id);
+        
+        if (invitationDetails.getStatus() != null) {
+            invitation.setStatus(invitationDetails.getStatus());
+        }
+        
+        if (invitationDetails.getEntryTime() != null) {
+            invitation.setEntryTime(invitationDetails.getEntryTime());
+        }
+        
+        if (invitationDetails.getExitTime() != null) {
+            invitation.setExitTime(invitationDetails.getExitTime());
+        }
+        
+        if (invitationDetails.getNotes() != null) {
+            invitation.setNotes(invitationDetails.getNotes());
+        }
+        
+        log.info("Updated invitation: {}", id);
+        return invitationRepository.save(invitation);
+    }
+
+    public Invitation markEntry(Long id) {
+        Invitation invitation = getInvitationById(id);
+        invitation.setEntryTime(LocalDateTime.now());
+        invitation.setStatus(InvitationStatus.ENTERED);
+        log.info("Marked entry for invitation: {}", id);
+        return invitationRepository.save(invitation);
+    }
+
+    public Invitation markExit(Long id) {
+        Invitation invitation = getInvitationById(id);
+        invitation.setExitTime(LocalDateTime.now());
+        invitation.setStatus(InvitationStatus.EXITED);
+        log.info("Marked exit for invitation: {}", id);
+        return invitationRepository.save(invitation);
     }
 
     public QrValidationResponse validateQrToken(String qrToken) {
@@ -74,15 +113,16 @@ public class InvitationService {
             
             LocalDateTime now = LocalDateTime.now();
             
-            // Verificar si ya fue usado
-            if (invitation.getUsedAt() != null) {
+            // Verificar si ya ingresó o salió (ciclo completado)
+            if (invitation.getStatus() == InvitationStatus.ENTERED || 
+                invitation.getStatus() == InvitationStatus.EXITED) {
                 return QrValidationResponse.builder()
                         .valid(false)
-                        .message("Este código QR ya fue utilizado")
+                        .message("Esta invitación ya fue utilizada")
                         .visitorName(invitation.getGuestName())
                         .visitorRut(invitation.getGuestRut())
                         .alreadyUsed(true)
-                        .usedAt(invitation.getUsedAt())
+                        .usedAt(invitation.getEntryTime())
                         .build();
             }
             
@@ -97,11 +137,8 @@ public class InvitationService {
                         .build();
             }
             
-            // QR válido - marcar como usado
-            invitation.setUsedAt(now);
-            invitation.setStatus(InvitationStatus.USED);
-            invitationRepository.save(invitation);
-            
+            // QR válido - NO marcar como usado aún, solo validar
+            // El concierge marcará entrada con el botón "Marcar Entrada"
             return QrValidationResponse.builder()
                     .valid(true)
                     .message("Ingreso autorizado")

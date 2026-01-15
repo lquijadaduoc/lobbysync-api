@@ -44,7 +44,7 @@ services:
     networks:
       - lobbysync_network
     volumes:
-      - /Users/luisquijadamunoz/Downloads/serviceAccountKey.json:/app/serviceAccountKey.json:ro
+      - ./serviceAccountKey.json:/app/serviceAccountKey.json:ro
 
 volumes:
   postgres_data:

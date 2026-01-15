@@ -112,4 +112,40 @@ public class InvitationController {
         invitationService.deleteInvitation(id);
         return ResponseEntity.noContent().build();
     }
+
+    @Operation(
+            summary = "Actualizar invitacion",
+            description = "Actualiza el estado, hora de entrada, hora de salida de una invitacion."
+    )
+    @PutMapping("/{id}")
+    public ResponseEntity<Invitation> updateInvitation(
+            @PathVariable Long id,
+            @RequestBody Invitation invitationDetails) {
+        log.info("Updating invitation: {}", id);
+        Invitation updated = invitationService.updateInvitation(id, invitationDetails);
+        return ResponseEntity.ok(updated);
+    }
+
+    @Operation(
+            summary = "Marcar entrada de invitado",
+            description = "Registra la hora de entrada del visitante."
+    )
+    @PatchMapping("/{id}/entry")
+    public ResponseEntity<Invitation> markEntry(@PathVariable Long id) {
+        log.info("Marking entry for invitation: {}", id);
+        Invitation updated = invitationService.markEntry(id);
+        return ResponseEntity.ok(updated);
+    }
+
+    @Operation(
+            summary = "Marcar salida de invitado",
+            description = "Registra la hora de salida del visitante."
+    )
+    @PatchMapping("/{id}/exit")
+    public ResponseEntity<Invitation> markExit(@PathVariable Long id) {
+        log.info("Marking exit for invitation: {}", id);
+        Invitation updated = invitationService.markExit(id);
+        return ResponseEntity.ok(updated);
+    }
+
 }

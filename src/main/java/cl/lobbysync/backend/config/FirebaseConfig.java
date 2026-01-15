@@ -33,9 +33,13 @@ public class FirebaseConfig {
     }
 
     @Bean
-    public FirebaseAuth firebaseAuth(FirebaseApp firebaseApp) {
-        if (firebaseApp != null) {
-            return FirebaseAuth.getInstance(firebaseApp);
+    public FirebaseAuth firebaseAuth() {
+        try {
+            if (!FirebaseApp.getApps().isEmpty()) {
+                return FirebaseAuth.getInstance();
+            }
+        } catch (Exception e) {
+            log.warn("FirebaseAuth initialization failed: " + e.getMessage());
         }
         return null;
     }

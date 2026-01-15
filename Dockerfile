@@ -4,7 +4,10 @@ WORKDIR /app
 
 COPY pom.xml .
 
-RUN mvn clean dependency:resolve
+RUN mvn clean dependency:resolve dependency:resolve-plugins
+
+RUN mvn org.apache.maven.plugins:maven-dependency-plugin:3.1.2:get \
+    -Dartifact=org.projectlombok:lombok:1.18.36:jar
 
 COPY src ./src
 
