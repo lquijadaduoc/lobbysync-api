@@ -31,4 +31,6 @@ public class CreateUserRequest {
     private String role;
     
     private String phone;
+    
+    private Long unitId; // Solo para RESIDENT
 }

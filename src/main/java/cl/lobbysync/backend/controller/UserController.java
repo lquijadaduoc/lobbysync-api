@@ -1,6 +1,8 @@
 package cl.lobbysync.backend.controller;
 
+import cl.lobbysync.backend.dto.ChangePasswordRequest;
 import cl.lobbysync.backend.dto.CreateUserRequest;
+import cl.lobbysync.backend.dto.UpdateUserRequest;
 import cl.lobbysync.backend.dto.UserCreationResponse;
 import cl.lobbysync.backend.model.sql.User;
 import cl.lobbysync.backend.service.UserService;
@@ -15,11 +17,12 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/users")
 @Slf4j
-@Tag(name = "Users", description = "Consulta de usuarios sincronizados")
+@Tag(name = "Users", description = "Gestión completa de usuarios con Firebase")
 public class UserController {
 
     @Autowired
@@ -54,10 +57,19 @@ public class UserController {
             return ResponseEntity.status(401).build();
         }
 
-        String firebaseUid = (String) authentication.getPrincipal();
-        log.info("Getting current user info for: {}", firebaseUid);
+        String principal = (String) authentication.getPrincipal();
+        log.info("Getting current user info for principal: {}", principal);
         
-        User user = userService.getUserByFirebaseUid(firebaseUid);
+        // El principal puede ser email (JWT backend) o firebase_uid (Firebase token)
+        User user;
+        if (principal.contains("@")) {
+            // Es un email (viene del JWT del backend)
+            user = userService.getUserByEmail(principal);
+        } else {
+            // Es un firebase_uid (viene de Firebase)
+            user = userService.getUserByFirebaseUid(principal);
+        }
+        
         return ResponseEntity.ok(user);
     }
 
@@ -101,6 +113,73 @@ public class UserController {
                     .message("Error al crear usuario: " + e.getMessage())
                     .build()
             );
+        }
+    }
+
+    /**
+     * PUT /api/v1/users/{id}
+     * Actualiza un usuario existente
+     */
+    @Operation(
+            summary = "Actualizar usuario",
+            description = "Actualiza la información de un usuario existente en PostgreSQL y Firebase."
+    )
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateUser(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateUserRequest request) {
+        try {
+            log.info("Updating user with ID: {}", id);
+            User updatedUser = userService.updateUser(id, request);
+            return ResponseEntity.ok(updatedUser);
+        } catch (Exception e) {
+            log.error("Error updating user: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error al actualizar usuario: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * DELETE /api/v1/users/{id}
+     * Elimina un usuario de Firebase y PostgreSQL
+     */
+    @Operation(
+            summary = "Eliminar usuario",
+            description = "Elimina un usuario de Firebase Authentication y PostgreSQL."
+    )
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteUser(@PathVariable Long id) {
+        try {
+            log.info("Deleting user with ID: {}", id);
+            userService.deleteUser(id);
+            return ResponseEntity.ok(Map.of("message", "Usuario eliminado exitosamente"));
+        } catch (Exception e) {
+            log.error("Error deleting user: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error al eliminar usuario: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * POST /api/v1/users/{id}/change-password
+     * Cambia la contraseña de un usuario en Firebase
+     */
+    @Operation(
+            summary = "Cambiar contraseña",
+            description = "Cambia la contraseña de un usuario en Firebase Authentication."
+    )
+    @PostMapping("/{id}/change-password")
+    public ResponseEntity<?> changePassword(
+            @PathVariable Long id,
+            @Valid @RequestBody ChangePasswordRequest request) {
+        try {
+            log.info("Changing password for user ID: {}", id);
+            userService.changePassword(id, request.getNewPassword());
+            return ResponseEntity.ok(Map.of("message", "Contraseña cambiada exitosamente"));
+        } catch (Exception e) {
+            log.error("Error changing password: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error al cambiar contraseña: " + e.getMessage()));
         }
     }
 }

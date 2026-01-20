@@ -181,7 +181,16 @@ public class HomeController {
         if (authentication == null || !authentication.isAuthenticated()) {
             throw new RuntimeException("Usuario no autenticado");
         }
-        String firebaseUid = (String) authentication.getPrincipal();
-        return userService.getUserByFirebaseUid(firebaseUid);
+        
+        String principal = (String) authentication.getPrincipal();
+        
+        // El principal puede ser email (JWT backend) o firebase_uid (Firebase token)
+        if (principal.contains("@")) {
+            // Es un email (viene del JWT del backend)
+            return userService.getUserByEmail(principal);
+        } else {
+            // Es un firebase_uid (viene de Firebase)
+            return userService.getUserByFirebaseUid(principal);
+        }
     }
 }

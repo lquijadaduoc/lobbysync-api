@@ -6,6 +6,7 @@ import cl.lobbysync.backend.dto.UserData;
 import cl.lobbysync.backend.dto.UserSyncResponse;
 import cl.lobbysync.backend.model.sql.User;
 import cl.lobbysync.backend.repository.UserRepository;
+import cl.lobbysync.backend.service.JwtKeyService;
 import cl.lobbysync.backend.service.UserService;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
@@ -40,7 +41,8 @@ public class AuthController {
     @Autowired(required = false)
     private FirebaseAuth firebaseAuth;
 
-    private final Key jwtKey = Keys.secretKeyFor(SignatureAlgorithm.HS256);
+    @Autowired
+    private JwtKeyService jwtKeyService;
 
     @Operation(
             summary = "Login simple",
@@ -88,7 +90,7 @@ public class AuthController {
                 .claim("firebaseUid", user.getFirebaseUid())
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + 86400000)) // 24 horas
-                .signWith(jwtKey)
+                .signWith(jwtKeyService.getKey())
                 .compact();
 
         // Construir objeto UserData
