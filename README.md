@@ -1,70 +1,91 @@
-# LobbySync Backend API
+# 🏢 LobbySync Backend API
 
-Plataforma SaaS para gestión integral de edificios residenciales y comerciales, con integración Firebase para autenticación.
+Plataforma SaaS para gestión integral de edificios residenciales y comerciales, con integración Firebase para autenticación y gestión completa de usuarios.
 
-## 🚀 Características
+## 🚀 Características Principales
 
-- **Gestión de Edificios**: CRUD completo de propiedades residenciales y comerciales
-- **Control de Acceso**: Registro de entrada/salida con timestamps
-- **Gestión de Parcelas**: Seguimiento de entregas y paquetería
-- **Administración Financiera**: Generación y seguimiento de facturas
-- **Gestión de Activos**: Registro de activos y tickets de mantenimiento
-- **Autenticación Firebase**: Integración completa con Firebase Authentication
-- **Base de datos híbrida**: PostgreSQL (datos transaccionales) + MongoDB (logs y eventos)
-- **Documentación Swagger**: OpenAPI 3.0 con UI interactiva
-- **Docker**: Despliegue containerizado con compose
+- **✅ Gestión Completa de Usuarios con Firebase**
+  - CRUD completo (Crear, Leer, Actualizar, Eliminar)
+  - Integración bidireccional con Firebase Authentication  
+  - Cambio de contraseñas en Firebase
+  - Asignación de departamentos a residentes
+  - Sincronización automática PostgreSQL ↔ Firebase
+  
+- **🏢 Gestión de Edificios**: CRUD completo de propiedades residenciales y comerciales
+- **🚪 Control de Acceso**: Registro de entrada/salida con timestamps
+- **📦 Gestión de Paquetería**: Seguimiento de entregas y notificaciones
+- **💰 Administración Financiera**: Generación y seguimiento de facturas
+- **🛠️ Gestión de Activos**: Registro de activos y tickets de mantenimiento
+- **🎫 Sistema de Reservas**: Áreas comunes con aprobación automática
+- **👥 Gestión de Visitantes**: Invitaciones y control de acceso
+- **🔐 Autenticación Firebase**: Integración completa con Firebase Admin SDK
+- **📊 Base de datos híbrida**: PostgreSQL (datos transaccionales) + MongoDB (logs y eventos)
+- **📚 Documentación Swagger**: OpenAPI 3.0 con UI interactiva
+- **🐳 Docker**: Despliegue containerizado con compose
 
 ## 🏗️ Arquitectura
 
 ```
-┌─────────────────────┐
-│   Firebase Auth     │
-│  (Client-Side)      │
-└──────────┬──────────┘
+┌──────────────────────────┐
+│   Firebase Auth          │
+│  (Client SDK + Admin)    │
+└──────────┬───────────────┘
            │ ID Token
            ▼
 ┌──────────────────────────────────┐
 │  Spring Boot 4.0.0 Backend       │
-│  (Java 17)                       │
+│  Java 17 + Hibernate 7.1         │
 ├──────────────────────────────────┤
-│  ✓ REST API (/api/v1, /api/auth) │
+│  ✓ REST API Endpoints            │
 │  ✓ Firebase Token Validation     │
-│  ✓ User Sync                     │
+│  ✓ User Management (CRUD)        │
 │  ✓ Role-Based Access Control     │
-│  ✓ Swagger/OpenAPI Docs          │
+│  ✓ Swagger/OpenAPI 3.0           │
+│  ✓ JWT Authentication            │
 └──────────┬───────────────────────┘
            │
     ┌──────┴──────┐
     ▼             ▼
 ┌─────────┐  ┌──────────┐
 │PostgreSQL│  │MongoDB   │
-│  Users  │  │  Logs    │
-│ Buildings│  │ Events   │
-│ Finances│  │ Parcels  │
+│  15.15  │  │  Latest  │
+│ ┌─────┐ │  │ ┌──────┐ │
+│ │Users│ │  │ │Logs  │ │
+│ │Units│ │  │ │Events│ │
+│ │Bills│ │  │ └──────┘ │
+│ └─────┘ │  │          │
 └─────────┘  └──────────┘
 ```
 
 ## 📋 Requisitos Previos
 
-- Docker & Docker Compose
-- Java 17+ (para desarrollo local)
-- Maven 3.9+
-- Firebase Project configurado
+- **Docker & Docker Compose** (recomendado)
+- **Java 17+** (para desarrollo local)
+- **Maven 3.9+**
+- **Cuenta Firebase** con proyecto configurado
+- **PostgreSQL 15** (si no usas Docker)
+- **MongoDB** (si no usas Docker)
 
 ## 🔧 Instalación & Despliegue
 
-### Con Docker (Recomendado)
+### Con Docker (Recomendado - Producción)
 
 ```bash
 # Clonar repositorio
 git clone https://github.com/lquijadaduoc/lobbysync-api.git
 cd lobbysync-api
 
+# Configurar Firebase (ver sección Firebase)
+# Copiar serviceAccountKey.json a la raíz del proyecto
+
 # Iniciar servicios
 docker-compose up -d
 
 # Verificar estado
 docker ps
+
+# Ver logs
+docker logs lobbysync_backend -f
 ```
 
 ### Desarrollo Local
@@ -74,9 +95,9 @@ docker ps
 mvn clean install
 
 # Configurar variables de entorno
-export SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/edificios_db
-export SPRING_DATASOURCE_USERNAME=admin_postgres
-export SPRING_DATASOURCE_PASSWORD=postgres_db
+export SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/lobbysync
+export SPRING_DATASOURCE_USERNAME=postgres
+export SPRING_DATASOURCE_PASSWORD=postgres_password
 export SPRING_MONGODB_HOST=localhost
 export SPRING_MONGODB_PORT=27017
 
@@ -84,475 +105,228 @@ export SPRING_MONGODB_PORT=27017
 mvn spring-boot:run
 ```
 
-## 🔐 Configuración Firebase
+### Deployment a Producción VPS
 
-### Backend (Spring Boot)
+```bash
+# Usar script automatizado
+cd lobbysync-api
+.\deploy-produccion-usuarios.ps1  # Windows
+# o
+./deploy-vps.sh  # Linux
 
-1. **Crear proyecto en Firebase Console**: https://console.firebase.google.com
-2. **Habilitar Authentication** → Email/Password
-3. **Descargar serviceAccountKey.json** desde Project Settings → Service Accounts
-4. **Guardar en**: `/root/lobbysync-api/serviceAccountKey.json` (servidor)
-   - NO commitar a Git (protegido por .gitignore)
-
-### Frontend
-
-El frontend debe configurar Firebase Client SDK:
-
-```javascript
-// firebaseConfig.js
-import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-
-const firebaseConfig = {
-  apiKey: "AIzaSy...",
-  authDomain: "lobbysync-91db0.firebaseapp.com",
-  projectId: "lobbysync-91db0",
-  // ... demás configuración
-};
-
-export const auth = getAuth(initializeApp(firebaseConfig));
+# El script automáticamente:
+# 1. Compila con Maven
+# 2. Sube JAR al VPS
+# 3. Reinicia contenedores Docker
+# 4. Verifica logs
 ```
 
-### Usuarios de Prueba
+## 🔐 Configuración Firebase
 
-Crear estos usuarios en Firebase Console → Authentication → Users:
+### Paso 1: Crear Proyecto Firebase
 
-| Email | Contraseña | Rol |
-|-------|------------|-----|
-| superadmin@lobbysync.com | admin123 | SUPER_ADMIN |
-| admin@lobbysync.com | admin123 | ADMIN |
-| concierge@lobbysync.com | admin123 | CONCIERGE |
-| resident@lobbysync.com | admin123 | RESIDENT |
+1. Ir a [Firebase Console](https://console.firebase.google.com)
+2. Crear nuevo proyecto: `lobbysync-91db0`
+3. Habilitar **Authentication** → **Email/Password**
+
+### Paso 2: Obtener Service Account Key
+
+1. Project Settings → **Service Accounts**
+2. Click **Generate New Private Key**
+3. Guardar como `serviceAccountKey.json` en la raíz del proyecto
+4. **IMPORTANTE**: NO commitear a Git (ya está en .gitignore)
+
+### Paso 3: Configurar Backend
+
+```bash
+# El archivo debe estar en:
+/root/lobbysync-api/serviceAccountKey.json  # Producción
+./serviceAccountKey.json                     # Desarrollo local
+```
+
+### Paso 4: Configurar Frontend
+
+```javascript
+// src/config/firebase.js
+const firebaseConfig = {
+  apiKey: "AIzaSyD...",
+  authDomain: "lobbysync-91db0.firebaseapp.com",
+  projectId: "lobbysync-91db0",
+  storageBucket: "lobbysync-91db0.firebasestorage.app",
+  messagingSenderId: "...",
+  appId: "..."
+};
+```
 
 ## 📚 API Endpoints
 
-### Autenticación
+### 🔐 Autenticación
 
-#### Sincronizar Usuario con Backend
-`POST /api/auth/sync-user`
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| `POST` | `/api/auth/login` | Login con email/password Firebase |
+| `POST` | `/api/auth/refresh` | Refrescar token JWT |
+| `POST` | `/api/auth/logout` | Cerrar sesión |
 
-Sincroniza automáticamente el usuario autenticado en Firebase con PostgreSQL.
+### 👥 Gestión de Usuarios
 
-**Headers**:
-```
-Authorization: Bearer <firebase-id-token>
-```
+| Método | Endpoint | Descripción | Rol Requerido |
+|--------|----------|-------------|---------------|
+| `GET` | `/api/v1/users` | Listar todos los usuarios | ADMIN |
+| `GET` | `/api/v1/users/{id}` | Obtener usuario por ID | ADMIN |
+| `POST` | `/api/v1/users` | **Crear usuario en Firebase + PostgreSQL** | ADMIN |
+| `PUT` | `/api/v1/users/{id}` | **Actualizar usuario** | ADMIN |
+| `DELETE` | `/api/v1/users/{id}` | **Eliminar usuario (Firebase + DB)** | ADMIN |
+| `POST` | `/api/v1/users/{id}/change-password` | **Cambiar contraseña en Firebase** | ADMIN |
+| `GET` | `/api/v1/users/firebase/{uid}` | Obtener usuario por Firebase UID | ANY |
 
-**Response**:
-```json
-{
-  "id": 1,
-  "email": "user@example.com",
-  "role": "ADMIN",
-  "firebaseUid": "abc123...",
-  "isActive": true,
-  "isNew": false,
-  "message": "User already synchronized"
-}
-```
+#### Ejemplo: Crear Usuario
 
-#### Verificar Token
-`GET /api/auth/verify`
+```bash
+POST /api/v1/users
+Content-Type: application/json
 
-Verifica que el token de Firebase sea válido.
-
-**Headers**:
-```
-Authorization: Bearer <firebase-id-token>
-```
-
-### Usuarios
-
-#### Listar Todos los Usuarios
-`GET /api/v1/users`
-
-**Response**:
-```json
-[
-  {
-    "id": 1,
-    "email": "admin@lobbysync.com",
-    "role": "ADMIN",
-    "firstName": "Admin",
-    "lastName": "User",
-    "phone": "+56912345678",
-    "firebaseUid": "xyz789...",
-    "isActive": true,
-    "createdAt": "2026-01-10T12:00:00"
-  }
-]
-```
-
-#### Crear Usuario en Firebase y PostgreSQL
-`POST /api/v1/users`
-
-Crea un usuario simultáneamente en Firebase Authentication y PostgreSQL.
-
-**Request**:
-```json
 {
   "email": "nuevo@lobbysync.com",
   "password": "password123",
   "firstName": "Juan",
   "lastName": "Pérez",
   "role": "RESIDENT",
-  "phone": "+56987654321"
+  "phone": "+56912345678",
+  "unitId": 1  // Solo si role = RESIDENT
 }
 ```
 
-**Response**:
+**Respuesta:**
 ```json
 {
   "success": true,
   "message": "Usuario creado exitosamente en Firebase y PostgreSQL",
-  "userId": 5,
-  "firebaseUid": "def456...",
+  "userId": 10,
+  "firebaseUid": "xxxxxxxxxxx",
   "email": "nuevo@lobbysync.com",
   "role": "RESIDENT"
 }
 ```
 
-**Roles disponibles**: `SUPER_ADMIN`, `ADMIN`, `CONCIERGE`, `RESIDENT`
+### 🏢 Edificios
 
-#### Obtener Usuario Actual
-`GET /api/v1/users/me`
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| `GET` | `/api/v1/buildings` | Listar edificios |
+| `GET` | `/api/v1/buildings/{id}` | Obtener edificio |
+| `POST` | `/api/v1/buildings` | Crear edificio |
+| `PUT` | `/api/v1/buildings/{id}` | Actualizar edificio |
+| `DELETE` | `/api/v1/buildings/{id}` | Eliminar edificio |
+| `GET` | `/api/v1/buildings/{id}/units` | Unidades del edificio |
 
-**Headers**:
-```
-Authorization: Bearer <firebase-id-token>
-```
+### 🏠 Unidades
 
-**Response**:
-```json
-{
-  "id": 1,
-  "email": "user@example.com",
-  "role": "ADMIN",
-  "firstName": "Juan",
-  "lastName": "Admin",
-  "isActive": true
-}
-```
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| `GET` | `/api/v1/units` | Listar todas las unidades |
+| `GET` | `/api/v1/units/{id}` | Obtener unidad por ID |
+| `POST` | `/api/v1/units` | Crear unidad |
+| `PUT` | `/api/v1/units/{id}` | Actualizar unidad |
+| `DELETE` | `/api/v1/units/{id}` | Eliminar unidad |
 
-#### Obtener Usuario por ID
-`GET /api/v1/users/{id}`
+### 📦 Paquetería
 
-#### Obtener Usuario por Email
-`GET /api/v1/users/email/{email}`
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| `GET` | `/api/parcels` | Listar paquetes |
+| `GET` | `/api/parcels/status/{status}` | Paquetes por estado |
+| `POST` | `/api/parcels` | Registrar nuevo paquete |
+| `PATCH` | `/api/parcels/{id}/deliver` | Marcar como entregado |
 
-### Bitácora (Logbook)
+### 🎫 Reservas de Áreas Comunes
 
-#### Listar Entradas de Bitácora
-`GET /api/v1/logbook`
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| `GET` | `/api/reservations/common-areas` | Áreas disponibles |
+| `GET` | `/api/reservations/my-upcoming` | Mis próximas reservas |
+| `GET` | `/api/reservations/my-reservations` | Todas mis reservas |
+| `POST` | `/api/reservations` | Crear reserva |
+| `DELETE` | `/api/reservations/{id}` | Cancelar reserva |
+| `PATCH` | `/api/reservations/{id}/status` | Actualizar estado |
+| `POST` | `/api/reservations/{id}/approve` | Aprobar/rechazar reserva |
 
-**Query params**:
-- `page` (default: 0)
-- `size` (default: 50)
+### 👥 Visitantes e Invitaciones
 
-**Response**:
-```json
-[
-  {
-    "id": 1,
-    "note": "Visita de técnico de mantención",
-    "userEmail": "concierge@lobbysync.com",
-    "timestamp": "2026-01-10T14:30:00",
-    "createdAt": "2026-01-10T14:30:05"
-  }
-]
-```
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| `GET` | `/api/invitations` | Listar invitaciones |
+| `POST` | `/api/invitations` | Crear invitación |
+| `PATCH` | `/api/invitations/{id}/check-in` | Registrar entrada |
+| `PATCH` | `/api/invitations/{id}/check-out` | Registrar salida |
 
-#### Crear Entrada en Bitácora
-`POST /api/v1/logbook`
+### 🛠️ Tickets de Mantenimiento
 
-**Request**:
-```json
-{
-  "note": "Reparación de ascensor completada",
-  "user": "concierge@lobbysync.com",
-  "timestamp": "2026-01-10T15:00:00"
-}
-```
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| `GET` | `/api/tickets` | Listar tickets |
+| `POST` | `/api/tickets` | Crear ticket |
+| `PATCH` | `/api/tickets/{id}/status` | Actualizar estado |
 
-#### Actualizar Entrada
-`PUT /api/v1/logbook/{id}`
+### 💰 Finanzas
 
-#### Eliminar Entrada
-`DELETE /api/v1/logbook/{id}`
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| `GET` | `/api/v1/bills` | Listar facturas |
+| `POST` | `/api/v1/finance/bills/generate` | Generar facturas |
+| `POST` | `/api/v1/bills/{id}/pay` | Registrar pago |
 
-#### Buscar por Fecha
-`GET /api/v1/logbook/date/{date}`
+## 🔑 Roles y Permisos
 
-Formato de fecha: `yyyy-MM-dd` (ej: `2026-01-10`)
-
-### Edificios
-
-#### Listar Edificios
-`GET /api/v1/buildings`
-
-**Query params**:
-- `page` (default: 0)
-- `size` (default: 20)
-
-#### Crear Edificio
-`POST /api/v1/buildings`
-
-**Request**:
-```json
-{
-  "name": "Torre Central",
-  "address": "Av. Principal 123",
-  "city": "Santiago",
-  "totalUnits": 50
-}
-```
-
-#### Obtener Detalles
-`GET /api/v1/buildings/{id}`
-
-#### Actualizar Edificio
-`PUT /api/v1/buildings/{id}`
-
-#### Eliminar Edificio
-`DELETE /api/v1/buildings/{id}`
-
-### Unidades/Departamentos
-
-#### Listar Unidades
-`GET /api/v1/units`
-
-**Query params**:
-- `buildingId` (opcional)
-- `page`, `size`
-
-#### Crear Unidad
-`POST /api/v1/units`
-
-**Request**:
-```json
-{
-  "buildingId": 1,
-  "number": "101",
-  "floor": 1,
-  "area": 75.5,
-  "occupied": true,
-  "residentName": "Juan Pérez"
-}
-```
-
-#### Actualizar Unidad
-`PUT /api/v1/units/{id}`
-
-#### Eliminar Unidad
-`DELETE /api/v1/units/{id}`
-
-#### Listar Unidades por Edificio
-`GET /api/v1/buildings/{buildingId}/units`
-
-### Control de Acceso
-- `GET /api/v1/access/logs` - Listar registros de acceso
-- `POST /api/v1/access/entry` - Registrar entrada/salida
-
-### Parcelas
-- `GET /api/v1/parcels` - Listar parcelas
-- `POST /api/v1/parcels` - Registrar parcela
-- `PUT /api/v1/parcels/{id}` - Marcar como entregada
-
-### Finanzas
-- `GET /api/v1/bills` - Listar facturas
-- `POST /api/v1/finance/bills/generate` - Generar facturas
-
-### Activos
-- `POST /api/v1/assets/record` - Registrar activo
-- `POST /api/v1/assets/ticket` - Crear ticket de mantenimiento
+| Rol | Permisos |
+|-----|----------|
+| **ADMIN** | Acceso completo a todos los endpoints, gestión de usuarios, edificios, finanzas |
+| **CONCIERGE** | Gestión de paquetes, visitantes, tickets de mantenimiento |
+| **RESIDENT** | Ver mis paquetes, crear invitaciones, reservar áreas comunes |
+| **FINANCE** | Gestión de facturas, pagos, reportes financieros |
 
 ## 📖 Documentación Swagger
 
-Accesible en: `http://localhost:8080/swagger-ui/index.html`
+Una vez desplegado, accede a:
 
-Visualiza y prueba todos los endpoints interactivamente.
+- **Swagger UI**: http://168.197.50.14:8080/swagger-ui.html
+- **OpenAPI JSON**: http://168.197.50.14:8080/v3/api-docs
 
-## 🗄️ Base de Datos
+### Funcionalidades de Swagger:
+- 📋 Lista completa de endpoints
+- 🧪 Probar endpoints desde el navegador
+- 📝 Esquemas de request/response
+- 🔐 Autenticación Bearer Token
+- 📚 Documentación inline de parámetros
 
-### PostgreSQL 15
-- **Host**: postgres_db:5432 (Docker) / localhost:5432 (desarrollo)
-- **Usuario**: postgres
-- **Contraseña**: postgres
-- **Base de datos**: lobbysync
+## 📝 Changelog
 
-**Tablas principales**:
-- `users` - Usuarios sincronizados desde Firebase
-  - Columnas: id, email, firebase_uid, role, first_name, last_name, phone, is_active, created_at
-- `buildings` - Edificios/propiedades
-- `units` - Departamentos/unidades
-- `bills` - Facturas
-- `logbook_entries` - Entradas de bitácora del conserje
+### v1.1.0 (2026-01-20) ✨ NUEVO
+- ✅ **Gestión Completa de Usuarios**
+  - Endpoint `POST /api/v1/users` para crear usuarios con Firebase
+  - Endpoint `PUT /api/v1/users/{id}` para actualizar usuarios
+  - Endpoint `DELETE /api/v1/users/{id}` para eliminar (Firebase + DB)
+  - Endpoint `POST /api/v1/users/{id}/change-password` para cambiar contraseñas
+  - Asignación automática de departamentos a residentes (unitId)
+  - Sincronización bidireccional PostgreSQL ↔ Firebase
+- 🛠️ **Mejoras**
+  - UserService refactorizado con Unit repository injection
+  - DTOs actualizados: UpdateUserRequest, ChangePasswordRequest
+  - Script de deployment mejorado con nombre correcto de contenedores
 
-### MongoDB
-- **Host**: mongo_db:27017 (Docker) / localhost:27017 (desarrollo)
-- **Base de datos**: lobbysync
-
-**Colecciones principales**:
-- `access_logs` - Registros de entrada/salida
-- `parcels` - Entregas y paquetería
-- `asset_records` - Registro de activos del edificio
-- `maintenance_logs` - Tickets de mantenimiento
-
-## 🛠️ Desarrollo
-
-### Estructura del Proyecto
-
-```
-src/
-├── main/java/cl/lobbysync/backend/
-│   ├── controller/       # REST Controllers
-│   ├── service/          # Business Logic
-│   ├── repository/       # Data Access
-│   ├── model/           # Entities
-│   │   ├── sql/         # JPA Entities (PostgreSQL)
-│   │   └── mongo/       # MongoDB Documents
-│   ├── config/          # Spring Configuration
-│   ├── filter/          # Security Filters
-│   ├── dto/             # Data Transfer Objects
-│   ├── exception/       # Exception Handlers
-│   └── BackendApplication.java
-└── test/java/           # Unit Tests
-```
-
-### Variables de Entorno
-
-| Variable | Default | Descripción |
-|----------|---------|-------------|
-| `SPRING_DATASOURCE_URL` | jdbc:postgresql://postgres_db:5432/lobbysync | URL PostgreSQL |
-| `SPRING_DATASOURCE_USERNAME` | postgres | Usuario PostgreSQL |
-| `SPRING_DATASOURCE_PASSWORD` | postgres | Contraseña PostgreSQL |
-| `SPRING_MONGODB_HOST` | mongo_db | Host MongoDB |
-| `SPRING_MONGODB_PORT` | 27017 | Puerto MongoDB |
-| `SPRING_MONGODB_DATABASE` | lobbysync | Base de datos MongoDB |
-
-**Firebase**:
-- El archivo `serviceAccountKey.json` debe estar en la raíz del proyecto
-- Se monta automáticamente en el contenedor Docker
-
-## 🧪 Testing
-
-### Probar Autenticación
-
-```bash
-# 1. Obtener token de Firebase (desde el frontend)
-# El token se obtiene después de login exitoso
-
-# 2. Sincronizar usuario con backend
-curl -X POST http://168.197.50.14:8080/api/auth/sync-user \
-  -H "Authorization: Bearer <firebase-token>"
-
-# 3. Verificar usuario actual
-curl http://168.197.50.14:8080/api/v1/users/me \
-  -H "Authorization: Bearer <firebase-token>"
-```
-
-### Probar Creación de Usuario
-
-```bash
-curl -X POST http://168.197.50.14:8080/api/v1/users \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "nuevo@test.com",
-    "password": "test123456",
-    "firstName": "Test",
-    "lastName": "User",
-    "role": "RESIDENT",
-    "phone": "+56912345678"
-  }'
-```
-
-### Ejecutar Tests Unitarios
-
-```bash
-# Ejecutar todos los tests
-mvn test
-
-# Ejecutar test específico
-mvn test -Dtest=UserServiceTest
-
-# Generar reporte de coverage
-mvn test jacoco:report
-```
-
-## 🐛 Troubleshooting
-
-### Puerto ya en uso
-```bash
-# Encontrar proceso en puerto 8080
-lsof -i :8080
-
-# Matar proceso
-kill -9 <PID>
-```
-
-### Problemas de conexión BD
-```bash
-# Verificar Docker containers
-docker ps
-
-# Ver logs
-docker logs lobbysync_backend
-docker logs postgres_db
-docker logs mongo_db
-```
-
-### Firebase token inválido
-```bash
-# Verificar que serviceAccountKey.json existe
-ls -la /Users/tu-usuario/Downloads/serviceAccountKey.json
-
-# Verificar configuración en docker-compose.yml
-docker exec lobbysync_backend env | grep FIREBASE
-```
-
-## 📝 Cambios Recientes
-
-### v2.0.0 - Firebase Authentication Integration (2026-01-10)
-- ✅ **Firebase Admin SDK** integrado para autenticación
-- ✅ **Endpoint POST /api/v1/users** - Crear usuarios en Firebase + PostgreSQL
-- ✅ **Endpoint POST /api/auth/sync-user** - Sincronización automática
-- ✅ **FirebaseTokenFilter** - Validación de tokens en cada request
-- ✅ **Tabla users actualizada** - Columnas: first_name, last_name, phone
-- ✅ **Bitácora (Logbook)** - Sistema completo CRUD para conserjes
-- ✅ **Gestión de Edificios y Unidades** - CRUD completo
-- ✅ **Despliegue en VPS** - 168.197.50.14:8080
-- ✅ **Docker Compose** - PostgreSQL + MongoDB + Backend
-
-### v1.0.0 - Initial Release
-- ✅ Arquitectura base Spring Boot 4.0.0
-- ✅ Integración PostgreSQL y MongoDB
-- ✅ Swagger/OpenAPI documentation
-- ✅ Docker deployment
-
-## 🤝 Contribuciones
-
-Las contribuciones son bienvenidas. Por favor:
-
-1. Fork el repositorio
-2. Crea una rama para tu feature (`git checkout -b feature/amazing-feature`)
-3. Commit tus cambios (`git commit -m 'Add amazing feature'`)
-4. Push a la rama (`git push origin feature/amazing-feature`)
-5. Abre un Pull Request
+### v1.0.0 (2026-01-15)
+- ✅ Sistema base con autenticación Firebase
+- ✅ Gestión de edificios y unidades
+- ✅ Sistema de reservas de áreas comunes
+- ✅ Paquetería y visitantes
+- ✅ Tickets de mantenimiento
 
 ## 📄 Licencia
 
-MIT License - Ver `LICENSE` para detalles
+Este proyecto es privado y está bajo desarrollo para uso interno.
 
-## 📧 Contacto
+## 👥 Equipo
 
-Luis Quijada Munoz  
-📧 luisquijadaduoc@gmail.com  
-🔗 [GitHub](https://github.com/lquijadaduoc)
-
----
-
-**Última actualización**: 2026-01-10  
-**Versión**: v2.0.0  
-**Estado**: ✅ Production Ready  
-**Servidor**: http://168.197.50.14:8080  
-**Swagger UI**: http://168.197.50.14:8080/swagger-ui/index.html
+- **Backend Lead**: Sebastian
+- **Firebase Integration**: Sebastian
+- **DevOps**: Sebastian
