@@ -18,4 +18,5 @@ public class UserData {
     private String lastName;
     private String phone;
     private Boolean isActive;
+    private Long unitId;
 }

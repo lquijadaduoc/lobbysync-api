@@ -42,8 +42,8 @@ public class InvitationController {
             @Valid @RequestBody Invitation invitation) {
         
         if (authentication != null && authentication.isAuthenticated()) {
-            String firebaseUid = (String) authentication.getPrincipal();
-            User user = userService.getUserByFirebaseUid(firebaseUid);
+            String email = (String) authentication.getPrincipal();
+            User user = userService.getUserByEmail(email);
             invitation.setCreatedBy(user.getId());
         }
         
@@ -62,8 +62,8 @@ public class InvitationController {
             return ResponseEntity.status(401).build();
         }
         
-        String firebaseUid = (String) authentication.getPrincipal();
-        User user = userService.getUserByFirebaseUid(firebaseUid);
+        String email = (String) authentication.getPrincipal();
+        User user = userService.getUserByEmail(email);
         
         List<Invitation> invitations = invitationService.getInvitationsByCreatedBy(user.getId());
         return ResponseEntity.ok(invitations);

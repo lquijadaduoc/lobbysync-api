@@ -8,8 +8,18 @@ Plataforma SaaS para gestión integral de edificios residenciales y comerciales,
   - CRUD completo (Crear, Leer, Actualizar, Eliminar)
   - Integración bidireccional con Firebase Authentication  
   - Cambio de contraseñas en Firebase
-  - Asignación de departamentos a residentes
+  - Asignación de departamentos a residentes (unitId)
   - Sincronización automática PostgreSQL ↔ Firebase
+  - UserData DTO incluye unitId en respuestas de login
+  
+- **🔐 Autenticación y Seguridad**
+  - JWT tokens generados internamente
+  - Validación de tokens Firebase
+  - Manejo estructurado de errores HTTP (401, 403, 404, 409, 500)
+  - CustomAuthenticationEntryPoint para errores 401
+  - CustomAccessDeniedHandler para errores 403
+  - GlobalExceptionHandler para todas las excepciones
+  - Respuestas JSON con ErrorResponse consistente
   
 - **🏢 Gestión de Edificios**: CRUD completo de propiedades residenciales y comerciales
 - **🚪 Control de Acceso**: Registro de entrada/salida con timestamps
@@ -17,8 +27,7 @@ Plataforma SaaS para gestión integral de edificios residenciales y comerciales,
 - **💰 Administración Financiera**: Generación y seguimiento de facturas
 - **🛠️ Gestión de Activos**: Registro de activos y tickets de mantenimiento
 - **🎫 Sistema de Reservas**: Áreas comunes con aprobación automática
-- **👥 Gestión de Visitantes**: Invitaciones y control de acceso
-- **🔐 Autenticación Firebase**: Integración completa con Firebase Admin SDK
+- **👥 Gestión de Visitantes**: Invitaciones y control de acceso con QR
 - **📊 Base de datos híbrida**: PostgreSQL (datos transaccionales) + MongoDB (logs y eventos)
 - **📚 Documentación Swagger**: OpenAPI 3.0 con UI interactiva
 - **🐳 Docker**: Despliegue containerizado con compose

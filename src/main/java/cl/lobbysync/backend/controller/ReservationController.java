@@ -4,6 +4,7 @@ import cl.lobbysync.backend.dto.CheckOutRequest;
 import cl.lobbysync.backend.dto.ReservationApprovalRequest;
 import cl.lobbysync.backend.dto.ReservationGuestRequest;
 import cl.lobbysync.backend.dto.ReservationRequest;
+import cl.lobbysync.backend.exception.UnauthorizedException;
 import cl.lobbysync.backend.model.sql.CommonArea;
 import cl.lobbysync.backend.model.sql.Reservation;
 import cl.lobbysync.backend.model.sql.ReservationGuest;
@@ -15,6 +16,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -56,10 +58,6 @@ public class ReservationController {
             Authentication authentication,
             @RequestBody ReservationRequest request) {
         
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return ResponseEntity.status(401).build();
-        }
-
         String firebaseUid = (String) authentication.getPrincipal();
         User user = userService.getUserByFirebaseUid(firebaseUid);
         
@@ -82,10 +80,6 @@ public class ReservationController {
     @GetMapping("/my-upcoming")
     public ResponseEntity<List<Reservation>> getMyUpcomingReservations(Authentication authentication) {
         
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return ResponseEntity.status(401).build();
-        }
-
         String firebaseUid = (String) authentication.getPrincipal();
         User user = userService.getUserByFirebaseUid(firebaseUid);
         
@@ -100,10 +94,6 @@ public class ReservationController {
     @GetMapping("/my-reservations")
     public ResponseEntity<List<Reservation>> getMyReservations(Authentication authentication) {
         
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return ResponseEntity.status(401).build();
-        }
-
         String firebaseUid = (String) authentication.getPrincipal();
         User user = userService.getUserByFirebaseUid(firebaseUid);
         
@@ -120,10 +110,6 @@ public class ReservationController {
             Authentication authentication,
             @PathVariable Long id) {
         
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return ResponseEntity.status(401).build();
-        }
-
         String firebaseUid = (String) authentication.getPrincipal();
         User user = userService.getUserByFirebaseUid(firebaseUid);
         
@@ -157,10 +143,6 @@ public class ReservationController {
             @PathVariable Long id,
             @RequestBody ReservationApprovalRequest request) {
         
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return ResponseEntity.status(401).build();
-        }
-
         String firebaseUid = (String) authentication.getPrincipal();
         User admin = userService.getUserByFirebaseUid(firebaseUid);
         
@@ -205,10 +187,6 @@ public class ReservationController {
             @PathVariable Long id,
             @RequestBody List<ReservationGuestRequest> guests) {
         
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return ResponseEntity.status(401).build();
-        }
-
         String firebaseUid = (String) authentication.getPrincipal();
         User user = userService.getUserByFirebaseUid(firebaseUid);
         

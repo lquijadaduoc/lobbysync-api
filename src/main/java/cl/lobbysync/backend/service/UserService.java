@@ -3,6 +3,10 @@ package cl.lobbysync.backend.service;
 import cl.lobbysync.backend.dto.CreateUserRequest;
 import cl.lobbysync.backend.dto.UserCreationResponse;
 import cl.lobbysync.backend.dto.UserSyncResponse;
+import cl.lobbysync.backend.exception.ConflictException;
+import cl.lobbysync.backend.exception.FirebaseException;
+import cl.lobbysync.backend.exception.ResourceNotFoundException;
+import cl.lobbysync.backend.exception.ValidationException;
 import cl.lobbysync.backend.model.sql.User;
 import cl.lobbysync.backend.model.sql.Unit;
 import cl.lobbysync.backend.repository.UserRepository;
@@ -89,17 +93,23 @@ public class UserService {
 
     public User getUserById(Long userId) {
         return userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                    String.format("Usuario con ID %d no encontrado. Verifica que el ID sea correcto.", userId)
+                ));
     }
 
     public User getUserByEmail(String email) {
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                    String.format("Usuario con email '%s' no encontrado. Verifica que el email sea correcto.", email)
+                ));
     }
 
     public User getUserByFirebaseUid(String firebaseUid) {
         return userRepository.findByFirebaseUid(firebaseUid)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                    String.format("Usuario con Firebase UID '%s' no encontrado. El usuario debe estar registrado primero.", firebaseUid)
+                ));
     }
 
     /**
@@ -114,11 +124,10 @@ public class UserService {
             Optional<User> existingUser = userRepository.findByEmail(request.getEmail());
             if (existingUser.isPresent()) {
                 log.warn("User already exists in database: {}", request.getEmail());
-                return UserCreationResponse.builder()
-                        .success(false)
-                        .message("El usuario ya existe en la base de datos")
-                        .email(request.getEmail())
-                        .build();
+                throw new ConflictException(
+                    String.format("El email '%s' ya está registrado. Use un email diferente o actualice el usuario existente.", 
+                        request.getEmail())
+                );
             }
             
             // 2. Crear usuario en Firebase Authentication
@@ -150,7 +159,10 @@ public class UserService {
             // Asignar unidad si es residente y se proporciona unitId
             if (request.getUnitId() != null && "RESIDENT".equals(request.getRole())) {
                 Unit unit = unitRepository.findById(request.getUnitId())
-                        .orElseThrow(() -> new RuntimeException("Unidad no encontrada con ID: " + request.getUnitId()));
+                        .orElseThrow(() -> new ResourceNotFoundException(
+                            String.format("Unidad con ID %d no encontrada. Verifica que el departamento exista.", 
+                                request.getUnitId())
+                        ));
                 userBuilder.unit(unit);
             }
             
@@ -170,26 +182,18 @@ public class UserService {
                     
         } catch (FirebaseAuthException e) {
             log.error("Firebase error creating user: {}", e.getMessage());
-            String errorMessage = "Error en Firebase: ";
             
             if (e.getAuthErrorCode().name().equals("EMAIL_ALREADY_EXISTS")) {
-                errorMessage += "El correo ya está registrado en Firebase";
+                throw new ConflictException(
+                    String.format("El correo '%s' ya está registrado en Firebase. Use un email diferente.", 
+                        request.getEmail())
+                );
             } else {
-                errorMessage += e.getMessage();
+                throw new FirebaseException(
+                    "Error al crear usuario en Firebase: " + e.getMessage() + 
+                    ". Verifica los datos y la configuración de Firebase."
+                );
             }
-            
-            return UserCreationResponse.builder()
-                    .success(false)
-                    .message(errorMessage)
-                    .email(request.getEmail())
-                    .build();
-        } catch (Exception e) {
-            log.error("Error creating user: {}", e.getMessage());
-            return UserCreationResponse.builder()
-                    .success(false)
-                    .message("Error al crear usuario: " + e.getMessage())
-                    .email(request.getEmail())
-                    .build();
         }
     }
 
@@ -198,56 +202,55 @@ public class UserService {
      */
     @Transactional
     public User updateUser(Long userId, cl.lobbysync.backend.dto.UpdateUserRequest request) {
-        try {
-            User user = getUserById(userId);
-            
-            // Actualizar campos si están presentes
-            if (request.getFirstName() != null) {
-                user.setFirstName(request.getFirstName());
-            }
-            if (request.getLastName() != null) {
-                user.setLastName(request.getLastName());
-            }
-            if (request.getPhone() != null) {
-                user.setPhone(request.getPhone());
-            }
-            if (request.getRole() != null) {
-                user.setRole(request.getRole());
-            }
-            if (request.getUnitId() != null) {
-                Unit unit = unitRepository.findById(request.getUnitId())
-                        .orElseThrow(() -> new RuntimeException("Unidad no encontrada con ID: " + request.getUnitId()));
-                user.setUnit(unit);
-            }
-            if (request.getIsActive() != null) {
-                user.setIsActive(request.getIsActive());
-            }
-            
-            // Actualizar displayName en Firebase si hay cambios de nombre
-            if ((request.getFirstName() != null || request.getLastName() != null) && user.getFirebaseUid() != null) {
-                try {
-                    String displayName = (request.getFirstName() != null ? request.getFirstName() : user.getFirstName()) 
-                                       + " " 
-                                       + (request.getLastName() != null ? request.getLastName() : user.getLastName());
-                    
-                    UserRecord.UpdateRequest updateRequest = new UserRecord.UpdateRequest(user.getFirebaseUid())
-                            .setDisplayName(displayName);
-                    
-                    firebaseAuth.updateUser(updateRequest);
-                    log.info("Updated displayName in Firebase for user: {}", user.getEmail());
-                } catch (FirebaseAuthException e) {
-                    log.warn("Could not update Firebase displayName: {}", e.getMessage());
-                }
-            }
-            
-            User updatedUser = userRepository.save(user);
-            log.info("User updated: {}", updatedUser.getEmail());
-            
-            return updatedUser;
-        } catch (Exception e) {
-            log.error("Error updating user: {}", e.getMessage());
-            throw new RuntimeException("Error al actualizar usuario: " + e.getMessage());
+        User user = getUserById(userId);
+        
+        // Actualizar campos si están presentes
+        if (request.getFirstName() != null) {
+            user.setFirstName(request.getFirstName());
         }
+        if (request.getLastName() != null) {
+            user.setLastName(request.getLastName());
+        }
+        if (request.getPhone() != null) {
+            user.setPhone(request.getPhone());
+        }
+        if (request.getRole() != null) {
+            user.setRole(request.getRole());
+        }
+        if (request.getUnitId() != null) {
+            Unit unit = unitRepository.findById(request.getUnitId())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                        String.format("Unidad con ID %d no encontrada. Verifica que el departamento exista.", 
+                            request.getUnitId())
+                    ));
+            user.setUnit(unit);
+        }
+        if (request.getIsActive() != null) {
+            user.setIsActive(request.getIsActive());
+        }
+        
+        // Actualizar displayName en Firebase si hay cambios de nombre
+        if ((request.getFirstName() != null || request.getLastName() != null) && user.getFirebaseUid() != null) {
+            try {
+                String displayName = (request.getFirstName() != null ? request.getFirstName() : user.getFirstName()) 
+                                   + " " 
+                                   + (request.getLastName() != null ? request.getLastName() : user.getLastName());
+                
+                UserRecord.UpdateRequest updateRequest = new UserRecord.UpdateRequest(user.getFirebaseUid())
+                        .setDisplayName(displayName);
+                
+                firebaseAuth.updateUser(updateRequest);
+                log.info("Updated displayName in Firebase for user: {}", user.getEmail());
+            } catch (FirebaseAuthException e) {
+                log.warn("Could not update Firebase displayName: {}", e.getMessage());
+                // No lanzamos excepción aquí porque el update en DB es más importante
+            }
+        }
+        
+        User updatedUser = userRepository.save(user);
+        log.info("User updated: {}", updatedUser.getEmail());
+        
+        return updatedUser;
     }
 
     /**
@@ -255,52 +258,50 @@ public class UserService {
      */
     @Transactional
     public void deleteUser(Long userId) {
-        try {
-            User user = getUserById(userId);
-            
-            // Eliminar de Firebase si tiene firebaseUid
-            if (user.getFirebaseUid() != null) {
-                try {
-                    firebaseAuth.deleteUser(user.getFirebaseUid());
-                    log.info("User deleted from Firebase: {}", user.getEmail());
-                } catch (FirebaseAuthException e) {
-                    log.warn("Could not delete user from Firebase (may not exist): {}", e.getMessage());
-                }
+        User user = getUserById(userId);
+        
+        // Eliminar de Firebase si tiene firebaseUid
+        if (user.getFirebaseUid() != null) {
+            try {
+                firebaseAuth.deleteUser(user.getFirebaseUid());
+                log.info("User deleted from Firebase: {}", user.getEmail());
+            } catch (FirebaseAuthException e) {
+                log.warn("Could not delete user from Firebase (may not exist): {}", e.getMessage());
+                // Continuamos con la eliminación de la DB aunque falle Firebase
             }
-            
-            // Eliminar de PostgreSQL
-            userRepository.delete(user);
-            log.info("User deleted from database: {}", user.getEmail());
-            
-        } catch (Exception e) {
-            log.error("Error deleting user: {}", e.getMessage());
-            throw new RuntimeException("Error al eliminar usuario: " + e.getMessage());
         }
+        
+        // Eliminar de PostgreSQL
+        userRepository.delete(user);
+        log.info("User deleted from database: {}", user.getEmail());
     }
 
     /**
      * Cambia la contraseña de un usuario en Firebase
      */
     public void changePassword(Long userId, String newPassword) {
+        User user = getUserById(userId);
+        
+        if (user.getFirebaseUid() == null || user.getFirebaseUid().trim().isEmpty()) {
+            throw new ValidationException(
+                String.format("El usuario '%s' no tiene Firebase UID asociado. No se puede cambiar la contraseña.", 
+                    user.getEmail())
+            );
+        }
+        
         try {
-            User user = getUserById(userId);
-            
-            if (user.getFirebaseUid() == null) {
-                throw new RuntimeException("Usuario no tiene Firebase UID asociado");
-            }
-            
             UserRecord.UpdateRequest updateRequest = new UserRecord.UpdateRequest(user.getFirebaseUid())
                     .setPassword(newPassword);
             
             firebaseAuth.updateUser(updateRequest);
-            log.info("Password changed for user: {}", user.getEmail());
+            log.info("Password changed successfully for user: {}", user.getEmail());
             
         } catch (FirebaseAuthException e) {
             log.error("Firebase error changing password: {}", e.getMessage());
-            throw new RuntimeException("Error al cambiar contraseña en Firebase: " + e.getMessage());
-        } catch (Exception e) {
-            log.error("Error changing password: {}", e.getMessage());
-            throw new RuntimeException("Error al cambiar contraseña: " + e.getMessage());
+            throw new FirebaseException(
+                String.format("Error al cambiar contraseña en Firebase: %s. Verifica que el usuario exista en Firebase.", 
+                    e.getMessage())
+            );
         }
     }
 }

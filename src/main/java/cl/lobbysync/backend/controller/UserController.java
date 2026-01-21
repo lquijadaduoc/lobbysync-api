@@ -4,6 +4,8 @@ import cl.lobbysync.backend.dto.ChangePasswordRequest;
 import cl.lobbysync.backend.dto.CreateUserRequest;
 import cl.lobbysync.backend.dto.UpdateUserRequest;
 import cl.lobbysync.backend.dto.UserCreationResponse;
+import cl.lobbysync.backend.exception.ResourceNotFoundException;
+import cl.lobbysync.backend.exception.ValidationException;
 import cl.lobbysync.backend.model.sql.User;
 import cl.lobbysync.backend.service.UserService;
 import lombok.extern.slf4j.Slf4j;
@@ -79,7 +81,11 @@ public class UserController {
     )
     @GetMapping("/{id}")
     public ResponseEntity<User> getUserById(@PathVariable Long id) {
-        return ResponseEntity.ok(userService.getUserById(id));
+        if (id == null || id <= 0) {
+            throw new ValidationException("id", id, "El ID del usuario debe ser un número positivo");
+        }
+        User user = userService.getUserById(id);
+        return ResponseEntity.ok(user);
     }
 
     @Operation(
@@ -88,7 +94,14 @@ public class UserController {
     )
     @GetMapping("/email/{email}")
     public ResponseEntity<User> getUserByEmail(@PathVariable String email) {
-        return ResponseEntity.ok(userService.getUserByEmail(email));
+        if (email == null || email.trim().isEmpty()) {
+            throw new ValidationException("email", email, "El email no puede estar vacío");
+        }
+        if (!email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
+            throw new ValidationException("email", email, "El formato del email es inválido. Ejemplo: usuario@dominio.com");
+        }
+        User user = userService.getUserByEmail(email);
+        return ResponseEntity.ok(user);
     }
 
     /**
@@ -101,19 +114,34 @@ public class UserController {
     )
     @PostMapping
     public ResponseEntity<UserCreationResponse> createUser(@Valid @RequestBody CreateUserRequest request) {
-        try {
-            log.info("Creating new user with email: {}", request.getEmail());
-            UserCreationResponse response = userService.createUserWithFirebase(request);
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-        } catch (Exception e) {
-            log.error("Error creating user: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                UserCreationResponse.builder()
-                    .success(false)
-                    .message("Error al crear usuario: " + e.getMessage())
-                    .build()
-            );
+        // Validaciones adicionales de negocio
+        if (request.getEmail() == null || request.getEmail().trim().isEmpty()) {
+            throw new ValidationException("email", "El email es requerido");
         }
+        if (request.getPassword() == null || request.getPassword().length() < 6) {
+            throw new ValidationException("password", "La contraseña debe tener al menos 6 caracteres");
+        }
+        if (request.getRole() == null || request.getRole().trim().isEmpty()) {
+            throw new ValidationException("role", "El rol es requerido (ADMIN, CONCIERGE, RESIDENT, FINANCE)");
+        }
+        
+        // Validar que el rol sea válido
+        String[] validRoles = {"ADMIN", "CONCIERGE", "RESIDENT", "FINANCE"};
+        boolean validRole = false;
+        for (String role : validRoles) {
+            if (role.equalsIgnoreCase(request.getRole())) {
+                validRole = true;
+                break;
+            }
+        }
+        if (!validRole) {
+            throw new ValidationException("role", request.getRole(), 
+                "El rol debe ser uno de: ADMIN, CONCIERGE, RESIDENT, FINANCE");
+        }
+        
+        log.info("Creating new user with email: {}", request.getEmail());
+        UserCreationResponse response = userService.createUserWithFirebase(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     /**
@@ -125,18 +153,32 @@ public class UserController {
             description = "Actualiza la información de un usuario existente en PostgreSQL y Firebase."
     )
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateUser(
+    public ResponseEntity<User> updateUser(
             @PathVariable Long id,
             @Valid @RequestBody UpdateUserRequest request) {
-        try {
-            log.info("Updating user with ID: {}", id);
-            User updatedUser = userService.updateUser(id, request);
-            return ResponseEntity.ok(updatedUser);
-        } catch (Exception e) {
-            log.error("Error updating user: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Error al actualizar usuario: " + e.getMessage()));
+        if (id == null || id <= 0) {
+            throw new ValidationException("id", id, "El ID del usuario debe ser un número positivo");
         }
+        
+        // Validar rol si se proporciona
+        if (request.getRole() != null && !request.getRole().trim().isEmpty()) {
+            String[] validRoles = {"ADMIN", "CONCIERGE", "RESIDENT", "FINANCE"};
+            boolean validRole = false;
+            for (String role : validRoles) {
+                if (role.equalsIgnoreCase(request.getRole())) {
+                    validRole = true;
+                    break;
+                }
+            }
+            if (!validRole) {
+                throw new ValidationException("role", request.getRole(), 
+                    "El rol debe ser uno de: ADMIN, CONCIERGE, RESIDENT, FINANCE");
+            }
+        }
+        
+        log.info("Updating user with ID: {}", id);
+        User updatedUser = userService.updateUser(id, request);
+        return ResponseEntity.ok(updatedUser);
     }
 
     /**
@@ -148,16 +190,17 @@ public class UserController {
             description = "Elimina un usuario de Firebase Authentication y PostgreSQL."
     )
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteUser(@PathVariable Long id) {
-        try {
-            log.info("Deleting user with ID: {}", id);
-            userService.deleteUser(id);
-            return ResponseEntity.ok(Map.of("message", "Usuario eliminado exitosamente"));
-        } catch (Exception e) {
-            log.error("Error deleting user: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Error al eliminar usuario: " + e.getMessage()));
+    public ResponseEntity<Map<String, String>> deleteUser(@PathVariable Long id) {
+        if (id == null || id <= 0) {
+            throw new ValidationException("id", id, "El ID del usuario debe ser un número positivo");
         }
+        
+        log.info("Deleting user with ID: {}", id);
+        userService.deleteUser(id);
+        return ResponseEntity.ok(Map.of(
+            "message", "Usuario eliminado exitosamente",
+            "userId", id.toString()
+        ));
     }
 
     /**
@@ -169,17 +212,25 @@ public class UserController {
             description = "Cambia la contraseña de un usuario en Firebase Authentication."
     )
     @PostMapping("/{id}/change-password")
-    public ResponseEntity<?> changePassword(
+    public ResponseEntity<Map<String, String>> changePassword(
             @PathVariable Long id,
             @Valid @RequestBody ChangePasswordRequest request) {
-        try {
-            log.info("Changing password for user ID: {}", id);
-            userService.changePassword(id, request.getNewPassword());
-            return ResponseEntity.ok(Map.of("message", "Contraseña cambiada exitosamente"));
-        } catch (Exception e) {
-            log.error("Error changing password: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Error al cambiar contraseña: " + e.getMessage()));
+        if (id == null || id <= 0) {
+            throw new ValidationException("id", id, "El ID del usuario debe ser un número positivo");
         }
+        if (request.getNewPassword() == null || request.getNewPassword().trim().isEmpty()) {
+            throw new ValidationException("newPassword", "La nueva contraseña es requerida");
+        }
+        if (request.getNewPassword().length() < 6) {
+            throw new ValidationException("newPassword", 
+                "La contraseña debe tener al menos 6 caracteres para cumplir con los requisitos de Firebase");
+        }
+        
+        log.info("Changing password for user ID: {}", id);
+        userService.changePassword(id, request.getNewPassword());
+        return ResponseEntity.ok(Map.of(
+            "message", "Contraseña cambiada exitosamente en Firebase",
+            "userId", id.toString()
+        ));
     }
 }

@@ -44,6 +44,9 @@ public class User {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "unit_id", insertable = false, updatable = false)
+    private Long unitId;
+
     @ManyToOne
     @JoinColumn(name = "unit_id")
     private Unit unit;

@@ -69,9 +69,9 @@ if (Get-Command pscp -ErrorAction SilentlyContinue) {
 
 Write-Host "OK - JAR subido al VPS" -ForegroundColor Green
 
-# Paso 3: Copiar serviceAccountKey.json
+# Paso 3: Copiar serviceAccountKey.json y docker-compose.yml
 Write-Host ""
-Write-Host "[3/6] Verificando archivo Firebase..." -ForegroundColor Yellow
+Write-Host "[3/6] Verificando archivos de configuracion..." -ForegroundColor Yellow
 
 $firebaseKeyPath = "$PROJECT_PATH\serviceAccountKey.json"
 if (Test-Path $firebaseKeyPath) {
@@ -79,30 +79,41 @@ if (Test-Path $firebaseKeyPath) {
     if (Get-Command pscp -ErrorAction SilentlyContinue) {
         echo y | pscp -pw $VPS_PASSWORD $firebaseKeyPath "$VPS_USER@$VPS_IP`:/root/lobbysync-api/serviceAccountKey.json"
     }
-    Write-Host "OK - Firebase key sincronizada" -ForegroundColor Green
 } else {
-    Write-Host "ADVERTENCIA: serviceAccountKey.json no encontrado (puede que ya este en el servidor)" -ForegroundColor Yellow
+    Write-Host "   serviceAccountKey.json no encontrado (puede que ya este en el servidor)" -ForegroundColor Yellow
 }
 
-# Paso 4: Detener contenedor actual
+# Subir docker-compose.yml actualizado
+$dockerComposePath = "$PROJECT_PATH\docker-compose.yml"
+if (Test-Path $dockerComposePath) {
+    Write-Host "   Subiendo docker-compose.yml..." -ForegroundColor Gray
+    if (Get-Command pscp -ErrorAction SilentlyContinue) {
+        echo y | pscp -pw $VPS_PASSWORD $dockerComposePath "$VPS_USER@$VPS_IP`:/root/lobbysync-api/docker-compose.yml"
+    }
+    Write-Host "OK - Archivos de configuracion sincronizados" -ForegroundColor Green
+} else {
+    Write-Host "ADVERTENCIA: docker-compose.yml no encontrado" -ForegroundColor Yellow
+}
+
+# Paso 4: Copiar JAR al directorio del contenedor
 Write-Host ""
-Write-Host "[4/6] Deteniendo contenedor actual..." -ForegroundColor Yellow
+Write-Host "[4/6] Preparando JAR para deployment..." -ForegroundColor Yellow
 
-$stopCommand = "cd /root/lobbysync-api; docker-compose down; echo 'Container stopped'"
+$copyJarCommand = "cp /root/lobbysync-api/target/$JAR_NAME /root/lobbysync-api/app.jar; ls -lh /root/lobbysync-api/app.jar"
 
-echo y | plink -pw $VPS_PASSWORD -batch "$VPS_USER@$VPS_IP" $stopCommand
+echo y | plink -pw $VPS_PASSWORD -batch "$VPS_USER@$VPS_IP" $copyJarCommand
 
-Write-Host "OK - Contenedor detenido" -ForegroundColor Green
+Write-Host "OK - JAR copiado y listo" -ForegroundColor Green
 
-# Paso 5: Iniciar nuevo contenedor
+# Paso 5: Reiniciar contenedor para usar nuevo JAR
 Write-Host ""
-Write-Host "[5/6] Iniciando nuevo contenedor..." -ForegroundColor Yellow
+Write-Host "[5/6] Reiniciando contenedor con nuevo JAR..." -ForegroundColor Yellow
 
-$startCommand = "cd /root/lobbysync-api; docker-compose up -d; echo 'Waiting for startup...'; sleep 15; docker ps"
+$restartCommand = "docker exec lobbysync_backend rm -f /app/app.jar; docker cp /root/lobbysync-api/app.jar lobbysync_backend:/app/app.jar; docker restart lobbysync_backend; echo 'Waiting for startup...'; sleep 35; docker ps"
 
-echo y | plink -pw $VPS_PASSWORD -batch "$VPS_USER@$VPS_IP" $startCommand
+echo y | plink -pw $VPS_PASSWORD -batch "$VPS_USER@$VPS_IP" $restartCommand
 
-Write-Host "OK - Contenedor iniciado" -ForegroundColor Green
+Write-Host "OK - Contenedor reiniciado con nuevo JAR" -ForegroundColor Green
 
 # Paso 6: Verificar logs
 Write-Host ""

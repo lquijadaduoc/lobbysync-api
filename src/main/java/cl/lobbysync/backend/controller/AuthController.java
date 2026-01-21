@@ -4,6 +4,8 @@ import cl.lobbysync.backend.dto.LoginRequest;
 import cl.lobbysync.backend.dto.LoginResponse;
 import cl.lobbysync.backend.dto.UserData;
 import cl.lobbysync.backend.dto.UserSyncResponse;
+import cl.lobbysync.backend.exception.UnauthorizedException;
+import cl.lobbysync.backend.exception.ValidationException;
 import cl.lobbysync.backend.model.sql.User;
 import cl.lobbysync.backend.repository.UserRepository;
 import cl.lobbysync.backend.service.JwtKeyService;
@@ -52,32 +54,32 @@ public class AuthController {
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
         String email = request.getEmail() != null ? request.getEmail() : request.getUsername();
         
-        if (email == null || email.isEmpty()) {
-            return ResponseEntity.badRequest().body(
-                LoginResponse.builder()
-                    .message("Email o username requerido")
-                    .build()
-            );
+        // Validación de email
+        if (email == null || email.trim().isEmpty()) {
+            throw new ValidationException("email", 
+                "El email es requerido. Proporciona un email válido en el campo 'email' o 'username'");
+        }
+        
+        // Validación de formato de email
+        if (!email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
+            throw new ValidationException("email", email, 
+                "El formato del email es inválido. Ejemplo: usuario@dominio.com");
         }
 
         // Buscar usuario en la base de datos
         Optional<User> userOpt = userRepository.findByEmail(email);
         
         if (userOpt.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
-                LoginResponse.builder()
-                    .message("Usuario no encontrado")
-                    .build()
+            throw new UnauthorizedException(
+                String.format("Usuario con email '%s' no encontrado. Verifica tus credenciales o regístrate primero.", email)
             );
         }
 
         User user = userOpt.get();
         
         if (!user.getIsActive()) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
-                LoginResponse.builder()
-                    .message("Usuario inactivo")
-                    .build()
+            throw new UnauthorizedException(
+                String.format("Usuario '%s' está inactivo. Contacta al administrador para reactivar tu cuenta.", email)
             );
         }
 
@@ -103,6 +105,7 @@ public class AuthController {
                 .lastName(user.getLastName())
                 .phone(user.getPhone())
                 .isActive(user.getIsActive())
+                .unitId(user.getUnitId())
                 .build();
 
         return ResponseEntity.ok(
@@ -132,31 +135,36 @@ public class AuthController {
         if (authentication != null && authentication.isAuthenticated()) {
             firebaseUid = (String) authentication.getPrincipal();
         } else if (body != null && body.containsKey("token")) {
+            String token = body.get("token");
+            if (token == null || token.trim().isEmpty()) {
+                throw new ValidationException("token", 
+                    "El token de Firebase no puede estar vacío. Proporciona un ID token válido.");
+            }
+            
             try {
-                String token = body.get("token");
                 FirebaseToken decodedToken = firebaseAuth.verifyIdToken(token);
                 firebaseUid = decodedToken.getUid();
             } catch (FirebaseAuthException e) {
-                return ResponseEntity.badRequest().body(
-                    UserSyncResponse.builder()
-                        .message("Invalid Firebase token: " + e.getMessage())
-                        .build()
+                throw new cl.lobbysync.backend.exception.FirebaseException(
+                    "Token de Firebase inválido o expirado: " + e.getMessage() + 
+                    ". Asegúrate de proporcionar un ID token válido de Firebase Authentication."
                 );
             }
         }
         
         if (firebaseUid == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            throw new UnauthorizedException(
+                "No se proporcionó autenticación. Envía un token JWT en el header Authorization o un token de Firebase en el body."
+            );
         }
         
         try {
             UserSyncResponse response = userService.syncUserFromFirebase(firebaseUid);
             return ResponseEntity.ok(response);
         } catch (FirebaseAuthException e) {
-            return ResponseEntity.badRequest().body(
-                UserSyncResponse.builder()
-                    .message("Error syncing user: " + e.getMessage())
-                    .build()
+            throw new cl.lobbysync.backend.exception.FirebaseException(
+                "Error al sincronizar usuario desde Firebase: " + e.getMessage() + 
+                ". Verifica que el usuario exista en Firebase Authentication."
             );
         }
     }
@@ -171,12 +179,11 @@ public class AuthController {
             return ResponseEntity.ok(Map.of(
                 "authenticated", true,
                 "uid", authentication.getPrincipal(),
-                "message", "Token is valid"
+                "message", "Token válido y autenticado correctamente"
             ));
         }
-        return ResponseEntity.status(401).body(Map.of(
-            "authenticated", false,
-            "message", "Token is invalid"
-        ));
+        throw new UnauthorizedException(
+            "Token inválido o expirado. Proporciona un token válido en el header Authorization: Bearer <token>"
+        );
     }
 }
