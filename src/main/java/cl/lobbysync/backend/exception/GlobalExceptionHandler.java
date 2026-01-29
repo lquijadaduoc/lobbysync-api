@@ -302,9 +302,15 @@ public class GlobalExceptionHandler {
     /**
      * 500 - Error general no manejado
      * NOTA: Solo maneja excepciones de rutas API (/api/**)
-     * Las rutas de infraestructura (Swagger, Actuator) se manejan por Spring Boot
+     * NoResourceFoundException se excluye explícitamente para permitir que Spring Boot
+     * maneje Swagger y Actuator correctamente
      */
-    @ExceptionHandler(Exception.class)
+    @ExceptionHandler({
+        RuntimeException.class,
+        IllegalStateException.class,
+        IllegalArgumentException.class,
+        NullPointerException.class
+    })
     public ResponseEntity<ErrorResponse> handleGlobalException(
             Exception ex,
             HttpServletRequest request) {
@@ -312,7 +318,6 @@ public class GlobalExceptionHandler {
         String path = request.getRequestURI();
         
         // Solo manejar errores de endpoints API
-        // Todas las demás rutas las maneja Spring Boot con sus handlers por defecto
         if (!path.startsWith("/api/")) {
             return null;
         }
