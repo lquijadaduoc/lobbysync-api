@@ -29,12 +29,61 @@ public class OpenApiConfig {
                                 
                                 ## 🔐 Autenticación
                                 
-                                Esta API utiliza **Firebase Authentication** con tokens JWT. Para usar los endpoints:
+                                Esta API soporta **2 métodos de autenticación**:
                                 
-                                1. Autenticarse en el frontend con Firebase (Email/Password)
-                                2. Obtener el ID Token de Firebase
-                                3. Incluir el token en el header: `Authorization: Bearer <token>`
-                                4. El backend sincroniza automáticamente el usuario con PostgreSQL
+                                ### 1. Google Sign-In (Recomendado)
+                                
+                                **Frontend:**
+                                1. Integra Google Sign-In button (Google Identity Services)
+                                2. Usuario hace clic y selecciona cuenta Google
+                                3. Obtienes el `idToken` desde Google
+                                4. Envías el token al backend: `POST /api/auth/google`
+                                
+                                **Backend:**
+                                - Valida el token con Google API
+                                - Busca o crea el usuario en PostgreSQL automáticamente
+                                - Retorna un JWT custom válido por 24 horas
+                                
+                                **Ejemplo:**
+                                ```json
+                                POST /api/auth/google
+                                {
+                                  "idToken": "eyJhbGciOiJSUzI1NiIsImtpZCI6..."
+                                }
+                                
+                                Response:
+                                {
+                                  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6...",
+                                  "user": {
+                                    "id": 1,
+                                    "email": "usuario@gmail.com",
+                                    "firstName": "Juan",
+                                    "lastName": "Pérez",
+                                    "role": "RESIDENT"
+                                  },
+                                  "message": "Login con Google exitoso"
+                                }
+                                ```
+                                
+                                ### 2. Login Simple (Email/Password)
+                                
+                                Para usuarios creados manualmente en el sistema:
+                                
+                                **Ejemplo:**
+                                ```json
+                                POST /api/auth/login
+                                {
+                                  "email": "admin@lobbysync.com",
+                                  "password": "Lobbysync_2026*"
+                                }
+                                ```
+                                
+                                ### Usando el Token JWT
+                                
+                                Todos los endpoints protegidos requieren el JWT en el header:
+                                ```
+                                Authorization: Bearer <tu-jwt-token>
+                                ```
                                 
                                 ### Usuarios de Prueba (Firebase Auth)
                                 

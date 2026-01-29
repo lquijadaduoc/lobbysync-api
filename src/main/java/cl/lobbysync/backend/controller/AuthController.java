@@ -1,13 +1,11 @@
 package cl.lobbysync.backend.controller;
 
-import cl.lobbysync.backend.dto.LoginRequest;
-import cl.lobbysync.backend.dto.LoginResponse;
-import cl.lobbysync.backend.dto.UserData;
-import cl.lobbysync.backend.dto.UserSyncResponse;
+import cl.lobbysync.backend.dto.*;
 import cl.lobbysync.backend.exception.UnauthorizedException;
 import cl.lobbysync.backend.exception.ValidationException;
 import cl.lobbysync.backend.model.sql.User;
 import cl.lobbysync.backend.repository.UserRepository;
+import cl.lobbysync.backend.service.GoogleAuthService;
 import cl.lobbysync.backend.service.JwtKeyService;
 import cl.lobbysync.backend.service.UserService;
 import com.google.firebase.auth.FirebaseAuth;
@@ -31,7 +29,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/auth")
-@Tag(name = "Auth", description = "Sincronizacion y verificacion de usuarios autenticados")
+@Tag(name = "Auth", description = "Autenticacion con Google OAuth y JWT")
 public class AuthController {
 
     @Autowired
@@ -39,6 +37,9 @@ public class AuthController {
 
     @Autowired
     private UserRepository userRepository;
+    
+    @Autowired
+    private GoogleAuthService googleAuthService;
 
     @Autowired(required = false)
     private FirebaseAuth firebaseAuth;
@@ -166,6 +167,89 @@ public class AuthController {
                 "Error al sincronizar usuario desde Firebase: " + e.getMessage() + 
                 ". Verifica que el usuario exista en Firebase Authentication."
             );
+        }
+    }
+
+    @Operation(
+            summary = "Login con Google",
+            description = "Autentica un usuario con Google OAuth 2.0. " +
+                    "El frontend debe enviar el Google ID Token obtenido desde Google Sign-In. " +
+                    "El backend valida el token, busca/crea el usuario en PostgreSQL y retorna un JWT."
+    )
+    @PostMapping("/google")
+    public ResponseEntity<LoginResponse> loginWithGoogle(@RequestBody GoogleLoginRequest request) {
+        try {
+            // 1. Validar el Google ID Token
+            GoogleUserInfo googleUser = googleAuthService.verifyGoogleToken(request.getIdToken());
+            
+            // 2. Buscar o crear usuario en PostgreSQL
+            Optional<User> existingUser = userRepository.findByEmail(googleUser.getEmail());
+            User user;
+            
+            if (existingUser.isEmpty()) {
+                // Crear nuevo usuario desde Google
+                user = new User();
+                user.setEmail(googleUser.getEmail());
+                user.setFirstName(googleUser.getFirstName());
+                user.setLastName(googleUser.getLastName());
+                user.setRole("RESIDENT"); // Rol por defecto
+                user.setIsActive(true);
+                user.setFirebaseUid(googleUser.getGoogleId()); // Guardamos el Google ID
+                user = userRepository.save(user);
+            } else {
+                user = existingUser.get();
+                
+                // Actualizar información si cambió
+                boolean updated = false;
+                if (!googleUser.getFirstName().equals(user.getFirstName())) {
+                    user.setFirstName(googleUser.getFirstName());
+                    updated = true;
+                }
+                if (!googleUser.getLastName().equals(user.getLastName())) {
+                    user.setLastName(googleUser.getLastName());
+                    updated = true;
+                }
+                if (updated) {
+                    user = userRepository.save(user);
+                }
+            }
+            
+            // Verificar que el usuario esté activo
+            if (!user.getIsActive()) {
+                throw new UnauthorizedException("Usuario desactivado. Contacta al administrador.");
+            }
+            
+            // 3. Generar JWT custom
+            Key key = jwtKeyService.getSigningKey();
+            String jwtToken = Jwts.builder()
+                    .subject(user.getEmail())
+                    .claim("userId", user.getId())
+                    .claim("role", user.getRole())
+                    .issuedAt(new Date())
+                    .expiration(new Date(System.currentTimeMillis() + 86400000)) // 24 horas
+                    .signWith(key, Jwts.SIG.HS256)
+                    .compact();
+            
+            // 4. Preparar respuesta
+            UserData userData = new UserData();
+            userData.setId(user.getId());
+            userData.setEmail(user.getEmail());
+            userData.setFirstName(user.getFirstName());
+            userData.setLastName(user.getLastName());
+            userData.setRole(user.getRole());
+            userData.setUnitId(user.getUnitId());
+            
+            LoginResponse response = new LoginResponse();
+            response.setToken(jwtToken);
+            response.setUser(userData);
+            response.setMessage("Login con Google exitoso");
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (UnauthorizedException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new UnauthorizedException("Error al procesar login con Google: " + e.getMessage());
         }
     }
 
