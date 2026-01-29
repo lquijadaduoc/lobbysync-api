@@ -35,7 +35,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authz -> authz
                         // Endpoints públicos
                         .requestMatchers("/api/auth/**",  "/api/reservations/common-areas", "/api/reservations/availability/**").permitAll()
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html", "/actuator/**").permitAll()
                         // Endpoints protegidos - requieren autenticación
                         .requestMatchers("/api/reservations/my-**", "/api/packages/my-**", "/api/invitations/my-**").authenticated()
                         .requestMatchers("/api/reservations/**", "/api/packages/**", "/api/invitations/**").authenticated()
