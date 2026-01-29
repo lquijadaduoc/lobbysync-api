@@ -198,21 +198,32 @@ public class UserService {
     }
 
     /**
-     * Actualiza un usuario existente
+     * Actualiza un usuario existente en PostgreSQL y sincroniza con Firebase
      */
     @Transactional
     public User updateUser(Long userId, cl.lobbysync.backend.dto.UpdateUserRequest request) {
         User user = getUserById(userId);
         
-        // Actualizar campos si están presentes
+        // Variables para rastrear cambios que requieren sincronización con Firebase
+        boolean hasFirebaseChanges = false;
+        String newEmail = null;
+        String newDisplayName = null;
+        Boolean newDisabled = null;
+        String newPhone = null;
+        
+        // Actualizar campos en PostgreSQL
         if (request.getFirstName() != null) {
             user.setFirstName(request.getFirstName());
+            hasFirebaseChanges = true;
         }
         if (request.getLastName() != null) {
             user.setLastName(request.getLastName());
+            hasFirebaseChanges = true;
         }
         if (request.getPhone() != null) {
             user.setPhone(request.getPhone());
+            newPhone = request.getPhone();
+            hasFirebaseChanges = true;
         }
         if (request.getRole() != null) {
             user.setRole(request.getRole());
@@ -225,30 +236,75 @@ public class UserService {
                     ));
             user.setUnit(unit);
         }
+        if (request.getEmail() != null && !request.getEmail().equals(user.getEmail())) {
+            // Verificar que el nuevo email no esté en uso
+            Optional<User> existingUser = userRepository.findByEmail(request.getEmail());
+            if (existingUser.isPresent() && !existingUser.get().getId().equals(userId)) {
+                throw new ConflictException(
+                    String.format("El email '%s' ya está en uso por otro usuario.", request.getEmail())
+                );
+            }
+            user.setEmail(request.getEmail());
+            newEmail = request.getEmail();
+            hasFirebaseChanges = true;
+        }
         if (request.getIsActive() != null) {
             user.setIsActive(request.getIsActive());
+            // isActive=false significa disabled=true en Firebase
+            newDisabled = !request.getIsActive();
+            hasFirebaseChanges = true;
         }
         
-        // Actualizar displayName en Firebase si hay cambios de nombre
-        if ((request.getFirstName() != null || request.getLastName() != null) && user.getFirebaseUid() != null) {
+        // Sincronizar cambios con Firebase si hay firebaseUid
+        if (hasFirebaseChanges && user.getFirebaseUid() != null && !user.getFirebaseUid().trim().isEmpty()) {
             try {
-                String displayName = (request.getFirstName() != null ? request.getFirstName() : user.getFirstName()) 
+                // Construir displayName si hay cambios de nombre
+                if (request.getFirstName() != null || request.getLastName() != null) {
+                    newDisplayName = (user.getFirstName() != null ? user.getFirstName() : "") 
                                    + " " 
-                                   + (request.getLastName() != null ? request.getLastName() : user.getLastName());
+                                   + (user.getLastName() != null ? user.getLastName() : "");
+                    newDisplayName = newDisplayName.trim();
+                }
                 
-                UserRecord.UpdateRequest updateRequest = new UserRecord.UpdateRequest(user.getFirebaseUid())
-                        .setDisplayName(displayName);
+                // Construir UpdateRequest con todos los cambios
+                UserRecord.UpdateRequest updateRequest = new UserRecord.UpdateRequest(user.getFirebaseUid());
+                
+                if (newEmail != null) {
+                    updateRequest.setEmail(newEmail);
+                    log.info("Actualizando email en Firebase: {} -> {}", user.getEmail(), newEmail);
+                }
+                if (newDisplayName != null && !newDisplayName.isEmpty()) {
+                    updateRequest.setDisplayName(newDisplayName);
+                }
+                if (newDisabled != null) {
+                    updateRequest.setDisabled(newDisabled);
+                    log.info("Actualizando estado en Firebase: disabled={}", newDisabled);
+                }
+                if (newPhone != null && !newPhone.isEmpty()) {
+                    // Firebase requiere formato E.164 para phoneNumber
+                    // Si no tiene el formato correcto, lo omitimos del update de Firebase
+                    if (newPhone.startsWith("+")) {
+                        updateRequest.setPhoneNumber(newPhone);
+                    } else {
+                        log.warn("Phone {} no tiene formato E.164, no se actualiza en Firebase", newPhone);
+                    }
+                }
                 
                 firebaseAuth.updateUser(updateRequest);
-                log.info("Updated displayName in Firebase for user: {}", user.getEmail());
+                log.info("Usuario sincronizado exitosamente con Firebase: {}", user.getEmail());
+                
             } catch (FirebaseAuthException e) {
-                log.warn("Could not update Firebase displayName: {}", e.getMessage());
-                // No lanzamos excepción aquí porque el update en DB es más importante
+                log.error("Error sincronizando con Firebase: {}", e.getMessage());
+                // Dependiendo de la estrategia, puedes:
+                // 1. Lanzar excepción para rollback completo
+                // 2. Continuar (PostgreSQL es la fuente de verdad)
+                // Por ahora continuamos y logueamos el error
+                log.warn("Continuando con actualización en PostgreSQL a pesar del error en Firebase");
             }
         }
         
         User updatedUser = userRepository.save(user);
-        log.info("User updated: {}", updatedUser.getEmail());
+        log.info("Usuario actualizado en PostgreSQL: {}", updatedUser.getEmail());
         
         return updatedUser;
     }
