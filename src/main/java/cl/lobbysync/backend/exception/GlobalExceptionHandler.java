@@ -307,13 +307,27 @@ public class GlobalExceptionHandler {
             Exception ex,
             HttpServletRequest request) {
         
+        String path = request.getRequestURI();
+        
+        // No interceptar errores de Swagger, Actuator o recursos estáticos
+        if (path.startsWith("/swagger-ui") || 
+            path.startsWith("/v3/api-docs") || 
+            path.startsWith("/actuator") ||
+            path.contains("/webjars/") ||
+            path.contains(".html") ||
+            path.contains(".css") ||
+            path.contains(".js")) {
+            // Re-lanzar la excepción para que Spring la maneje
+            throw new RuntimeException(ex);
+        }
+        
         log.error("Unexpected error: {}", ex.getMessage(), ex);
         
         ErrorResponse error = ErrorResponse.builder()
                 .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
                 .error("Internal Server Error")
                 .message("Ocurrió un error inesperado en el servidor")
-                .path(request.getRequestURI())
+                .path(path)
                 .details(ex.getMessage() != null ? ex.getMessage() : "Error desconocido")
                 .suggestions(List.of(
                     "Intenta nuevamente en unos momentos",
