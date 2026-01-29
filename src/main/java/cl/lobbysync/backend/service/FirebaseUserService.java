@@ -11,7 +11,11 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class FirebaseUserService {
 
-    private final FirebaseAuth firebaseAuth;
+    private FirebaseAuth firebaseAuth;
+
+    public FirebaseUserService() {
+        this.firebaseAuth = null;
+    }
 
     @Autowired(required = false)
     public FirebaseUserService(FirebaseAuth firebaseAuth) {
