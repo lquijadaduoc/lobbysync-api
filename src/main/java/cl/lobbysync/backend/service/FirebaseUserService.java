@@ -13,7 +13,7 @@ public class FirebaseUserService {
 
     private final FirebaseAuth firebaseAuth;
 
-    @Autowired
+    @Autowired(required = false)
     public FirebaseUserService(FirebaseAuth firebaseAuth) {
         this.firebaseAuth = firebaseAuth;
     }
