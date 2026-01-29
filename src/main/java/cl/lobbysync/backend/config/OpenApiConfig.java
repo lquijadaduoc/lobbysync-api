@@ -36,12 +36,11 @@ public class OpenApiConfig {
                                 3. Incluir el token en el header: `Authorization: Bearer <token>`
                                 4. El backend sincroniza automáticamente el usuario con PostgreSQL
                                 
-                                ### Usuarios de Prueba
+                                ### Usuarios de Prueba (Firebase Auth)
                                 
-                                - **Super Admin**: superadmin@lobbysync.com (contraseña: admin123)
-                                - **Admin**: admin@lobbysync.com (contraseña: admin123)
-                                - **Conserje**: concierge@lobbysync.com (contraseña: admin123)
-                                - **Residente**: resident@lobbysync.com (contraseña: admin123)
+                                - **Admin**: admin@lobbysync.com (contraseña: Lobbysync_2026*)
+                                - **Conserje**: concierge@lobbysync.com (contraseña: Lobbysync_2026*)
+                                - **Residente**: resident@lobbysync.com (contraseña: Lobbysync_2026*)
                                 
                                 ## 📚 Módulos Disponibles
                                 
