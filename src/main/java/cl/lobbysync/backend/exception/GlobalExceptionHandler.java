@@ -301,6 +301,8 @@ public class GlobalExceptionHandler {
 
     /**
      * 500 - Error general no manejado
+     * NOTA: NoResourceFoundException no se maneja aquí para permitir que Spring Boot
+     * muestre su página de error por defecto en rutas de infraestructura
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGlobalException(
@@ -309,15 +311,25 @@ public class GlobalExceptionHandler {
         
         String path = request.getRequestURI();
         
-        // No interceptar errores de Swagger, Actuator o recursos estáticos
-        if (path.startsWith("/swagger-ui") || 
-            path.startsWith("/v3/api-docs") || 
-            path.startsWith("/actuator") ||
-            path.contains("/webjars/") ||
-            path.contains(".html") ||
-            path.contains(".css") ||
-            path.contains(".js")) {
-            // Re-lanzar la excepción para que Spring la maneje
+        // No interceptar NoResourceFoundException para rutas de infraestructura
+        // Esto permite que Spring Boot maneje correctamente Swagger y Actuator
+        if (ex instanceof org.springframework.web.servlet.resource.NoResourceFoundException) {
+            if (path.startsWith("/swagger-ui") || 
+                path.startsWith("/v3/api-docs") || 
+                path.startsWith("/actuator") ||
+                path.contains("/webjars/")) {
+                // Delegar a Spring Boot para que sirva recursos estáticos o endpoints de infraestructura
+                throw (RuntimeException) ex;
+            }
+        }
+        
+        // También excluir archivos estáticos explícitamente
+        if (path.endsWith(".html") ||
+            path.endsWith(".css") ||
+            path.endsWith(".js") ||
+            path.endsWith(".ico") ||
+            path.endsWith(".png") ||
+            path.endsWith(".map")) {
             throw new RuntimeException(ex);
         }
         
