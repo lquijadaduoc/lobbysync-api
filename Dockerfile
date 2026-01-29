@@ -19,6 +19,7 @@ FROM eclipse-temurin:17-jdk
 WORKDIR /app
 
 COPY --from=builder /app/target/*.jar app.jar
+COPY serviceAccountKey.json .
 
 EXPOSE 8080
 

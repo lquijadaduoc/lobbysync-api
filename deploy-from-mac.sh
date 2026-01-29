@@ -100,6 +100,16 @@ docker exec postgres_db psql -U postgres -d lobbysync -c "SELECT 1;" >/dev/null 
 echo "✓ Contraseña de PostgreSQL configurada"
 echo ""
 
+# 6.6 Cargar datos iniciales (seed)
+echo "6.6 Cargando datos iniciales..."
+if [ -f "seed-production.sql" ]; then
+    docker exec -i postgres_db psql -U postgres -d lobbysync < seed-production.sql >/dev/null 2>&1
+    echo "✓ Datos iniciales cargados desde seed-production.sql"
+else
+    echo "⚠ Archivo seed-production.sql no encontrado, omitiendo..."
+fi
+echo ""
+
 # 7. Esperar a que MongoDB esté listo
 echo "7. Esperando MongoDB (máx 30s)..."
 for i in {1..30}; do
