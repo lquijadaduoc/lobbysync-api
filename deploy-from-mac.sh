@@ -91,6 +91,12 @@ fi
 echo "✓ Base de datos lobbysync verificada"
 echo ""
 
+# 6.5 Resetear contraseña de postgres para que coincida con docker-compose
+echo "6.5 Configurando contraseña de PostgreSQL..."
+docker exec postgres_db psql -U postgres -c "ALTER USER postgres WITH PASSWORD 'postgres';" >/dev/null 2>&1
+echo "✓ Contraseña de PostgreSQL configurada"
+echo ""
+
 # 7. Esperar a que MongoDB esté listo
 echo "7. Esperando MongoDB (máx 30s)..."
 for i in {1..30}; do
