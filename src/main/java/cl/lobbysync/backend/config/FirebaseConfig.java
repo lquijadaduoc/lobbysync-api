@@ -18,16 +18,23 @@ public class FirebaseConfig {
     public FirebaseApp firebaseApp() {
         try {
             if (FirebaseApp.getApps().isEmpty()) {
+                log.info("Initializing Firebase with serviceAccountKey.json");
                 FileInputStream serviceAccount = new FileInputStream("serviceAccountKey.json");
                 GoogleCredentials credentials = GoogleCredentials.fromStream(serviceAccount);
                 FirebaseOptions options = FirebaseOptions.builder()
                         .setCredentials(credentials)
                         .build();
-                return FirebaseApp.initializeApp(options);
+                FirebaseApp app = FirebaseApp.initializeApp(options);
+                log.info("Firebase initialized successfully");
+                return app;
             }
+            log.info("Firebase already initialized");
             return FirebaseApp.getInstance();
         } catch (IOException e) {
-            log.warn("Firebase initialization failed: " + e.getMessage());
+            log.error("Firebase initialization failed - IOException: {}", e.getMessage(), e);
+            return null;
+        } catch (Exception e) {
+            log.error("Firebase initialization failed - Exception: {}", e.getMessage(), e);
             return null;
         }
     }
@@ -36,10 +43,14 @@ public class FirebaseConfig {
     public FirebaseAuth firebaseAuth() {
         try {
             if (!FirebaseApp.getApps().isEmpty()) {
-                return FirebaseAuth.getInstance();
+                FirebaseAuth auth = FirebaseAuth.getInstance();
+                log.info("FirebaseAuth bean created successfully");
+                return auth;
+            } else {
+                log.error("FirebaseAuth cannot be created - FirebaseApp not initialized");
             }
         } catch (Exception e) {
-            log.warn("FirebaseAuth initialization failed: " + e.getMessage());
+            log.error("FirebaseAuth initialization failed: {}", e.getMessage(), e);
         }
         return null;
     }
