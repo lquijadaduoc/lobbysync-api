@@ -301,8 +301,8 @@ public class GlobalExceptionHandler {
 
     /**
      * 500 - Error general no manejado
-     * NOTA: NoResourceFoundException no se maneja aquí para permitir que Spring Boot
-     * muestre su página de error por defecto en rutas de infraestructura
+     * NOTA: Solo maneja excepciones de rutas API (/api/**)
+     * Las rutas de infraestructura (Swagger, Actuator) se manejan por Spring Boot
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGlobalException(
@@ -311,29 +311,13 @@ public class GlobalExceptionHandler {
         
         String path = request.getRequestURI();
         
-        // No interceptar NoResourceFoundException para rutas de infraestructura
-        // Esto permite que Spring Boot maneje correctamente Swagger y Actuator
-        if (ex instanceof org.springframework.web.servlet.resource.NoResourceFoundException) {
-            if (path.startsWith("/swagger-ui") || 
-                path.startsWith("/v3/api-docs") || 
-                path.startsWith("/actuator") ||
-                path.contains("/webjars/")) {
-                // Delegar a Spring Boot para que sirva recursos estáticos o endpoints de infraestructura
-                throw (RuntimeException) ex;
-            }
+        // Solo manejar errores de endpoints API
+        // Todas las demás rutas las maneja Spring Boot con sus handlers por defecto
+        if (!path.startsWith("/api/")) {
+            return null;
         }
         
-        // También excluir archivos estáticos explícitamente
-        if (path.endsWith(".html") ||
-            path.endsWith(".css") ||
-            path.endsWith(".js") ||
-            path.endsWith(".ico") ||
-            path.endsWith(".png") ||
-            path.endsWith(".map")) {
-            throw new RuntimeException(ex);
-        }
-        
-        log.error("Unexpected error: {}", ex.getMessage(), ex);
+        log.error("Unexpected error on {}: {}", path, ex.getMessage(), ex);
         
         ErrorResponse error = ErrorResponse.builder()
                 .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
