@@ -1,5 +1,35 @@
 # Deployment en VPS - LobbySyncAPI
 
+## ⚠️ PROBLEMA CRÍTICO RESUELTO - PostgreSQL Authentication
+
+### Problema identificado
+**Error**: `FATAL: password authentication failed for user "postgres"`
+
+**Causa raíz**: PostgreSQL 15 por defecto usa autenticación `scram-sha-256`, que no funciona correctamente con las credenciales `postgres/postgres` en contenedores Docker cuando hay volúmenes persistentes previos.
+
+### ✅ Solución implementada
+El `docker-compose.yml` **DEBE incluir**:
+```yaml
+postgres_db:
+  environment:
+    POSTGRES_HOST_AUTH_METHOD: md5  # ← CRÍTICO
+    POSTGRES_USER: postgres
+    POSTGRES_PASSWORD: postgres
+    POSTGRES_DB: lobbysync
+```
+
+### 🔧 Para resolver este error en deployment:
+```bash
+# Si falla con password authentication:
+docker compose down -v
+docker volume rm lobbysync-api_postgres_data  # Elimina volumen corrupto
+docker compose up -d postgres_db
+# Esperar que PostgreSQL inicialice con md5 auth
+docker compose up -d
+```
+
+---
+
 ## Información del VPS
 - **IP:** 168.197.50.14
 - **Usuario:** root

@@ -48,6 +48,10 @@ docker-compose down -v 2>/dev/null || true
 echo "🗑️  Limpiando imágenes antiguas..."
 docker image rm lobbysync-api-backend 2>/dev/null || true
 
+echo "🔧 IMPORTANTE: Eliminando volúmenes PostgreSQL si existen problemas de auth..."
+echo "   (Esto es crítico si PostgreSQL falla con 'password authentication failed')"
+docker volume ls | grep postgres && docker volume rm lobbysync-api_postgres_data 2>/dev/null || true
+
 echo "🔨 Construyendo y levantando nuevos servicios..."
 docker-compose up -d
 
