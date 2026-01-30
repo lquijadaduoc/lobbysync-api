@@ -308,7 +308,6 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({
         RuntimeException.class,
         IllegalStateException.class,
-        IllegalArgumentException.class,
         NullPointerException.class
     })
     public ResponseEntity<ErrorResponse> handleGlobalException(

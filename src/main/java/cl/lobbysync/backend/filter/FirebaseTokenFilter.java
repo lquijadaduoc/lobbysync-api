@@ -33,7 +33,6 @@ public class FirebaseTokenFilter extends OncePerRequestFilter {
                 FirebaseToken decodedToken = firebaseAuth.verifyIdToken(token);
                 
                 String uid = decodedToken.getUid();
-                String email = decodedToken.getEmail();
                 
                 UsernamePasswordAuthenticationToken authentication = 
                     new UsernamePasswordAuthenticationToken(

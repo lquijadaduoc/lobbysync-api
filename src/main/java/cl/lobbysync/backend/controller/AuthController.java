@@ -12,17 +12,13 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.FirebaseToken;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Autowired;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.security.Key;
 import java.util.Date;
 import java.util.Map;
 import java.util.Optional;
@@ -86,13 +82,13 @@ public class AuthController {
 
         // Generar token JWT
         String token = Jwts.builder()
-                .setSubject(user.getEmail())
+                .subject(user.getEmail())
                 .claim("email", user.getEmail())
                 .claim("role", user.getRole())
                 .claim("userId", user.getId())
                 .claim("firebaseUid", user.getFirebaseUid())
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 86400000)) // 24 horas
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + 86400000)) // 24 horas
                 .signWith(jwtKeyService.getKey())
                 .compact();
 
@@ -220,14 +216,13 @@ public class AuthController {
             }
             
             // 3. Generar JWT custom
-            Key key = jwtKeyService.getSigningKey();
             String jwtToken = Jwts.builder()
                     .subject(user.getEmail())
                     .claim("userId", user.getId())
                     .claim("role", user.getRole())
                     .issuedAt(new Date())
                     .expiration(new Date(System.currentTimeMillis() + 86400000)) // 24 horas
-                    .signWith(key, Jwts.SIG.HS256)
+                    .signWith(jwtKeyService.getKey())
                     .compact();
             
             // 4. Preparar respuesta

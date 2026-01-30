@@ -4,7 +4,6 @@ import cl.lobbysync.backend.dto.ChangePasswordRequest;
 import cl.lobbysync.backend.dto.CreateUserRequest;
 import cl.lobbysync.backend.dto.UpdateUserRequest;
 import cl.lobbysync.backend.dto.UserCreationResponse;
-import cl.lobbysync.backend.exception.ResourceNotFoundException;
 import cl.lobbysync.backend.exception.ValidationException;
 import cl.lobbysync.backend.model.sql.User;
 import cl.lobbysync.backend.service.UserService;

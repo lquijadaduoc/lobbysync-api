@@ -44,9 +44,9 @@ public class FirebaseConfig {
     }
 
     @Bean
-    public FirebaseAuth firebaseAuth() {
+    public FirebaseAuth firebaseAuth(FirebaseApp firebaseApp) {
         try {
-            if (!FirebaseApp.getApps().isEmpty()) {
+            if (firebaseApp != null && !FirebaseApp.getApps().isEmpty()) {
                 FirebaseAuth auth = FirebaseAuth.getInstance();
                 log.info("FirebaseAuth bean created successfully");
                 return auth;

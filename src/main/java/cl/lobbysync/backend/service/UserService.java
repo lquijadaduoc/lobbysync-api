@@ -112,13 +112,17 @@ public class UserService {
                 ));
     }
 
-    /**
-     * Crea un usuario en Firebase Authentication y lo sincroniza con PostgreSQL
-     */
     @Transactional
     public UserCreationResponse createUserWithFirebase(CreateUserRequest request) {
         try {
             log.info("Creating user in Firebase: {}", request.getEmail());
+            
+            // Verificar que Firebase esté disponible
+            if (firebaseAuth == null) {
+                throw new FirebaseException(
+                    "Firebase Authentication no está configurado. Verifica que el archivo serviceAccountKey.json esté correctamente colocado."
+                );
+            }
             
             // 1. Verificar si el usuario ya existe en PostgreSQL
             Optional<User> existingUser = userRepository.findByEmail(request.getEmail());

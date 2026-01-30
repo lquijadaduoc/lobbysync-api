@@ -1,27 +1,32 @@
-FROM maven:3.8-openjdk-17 AS builder
+# Build stage
+FROM eclipse-temurin:17-jdk as builder
 
-WORKDIR /app
+WORKDIR /build
 
+# Copiar archivos del proyecto
 COPY pom.xml .
-
-RUN mvn clean dependency:resolve dependency:resolve-plugins
-
-RUN mvn org.apache.maven.plugins:maven-dependency-plugin:3.1.2:get \
-    -Dartifact=org.projectlombok:lombok:1.18.36:jar
-
 COPY src ./src
 
-RUN mvn clean package -DskipTests
+# Compilar con Maven
+RUN apt-get update && apt-get install -y maven && \
+    mvn clean package -DskipTests -q
 
-
-FROM eclipse-temurin:17-jdk
+# Runtime stage
+FROM eclipse-temurin:17-jre
 
 WORKDIR /app
 
-COPY --from=builder /app/target/*.jar app.jar
-COPY serviceAccountKey.json .
+# Copiar JAR compilado del build stage
+COPY --from=builder /build/target/*.jar app.jar
+
+# Copiar serviceAccountKey.json si existe
+COPY serviceAccountKey.json* /app/
+
+# Crear directorio para config
+RUN mkdir -p /app/config
 
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-Dfile.encoding=UTF-8", "-jar", "app.jar"]
+
 
